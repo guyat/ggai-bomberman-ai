@@ -231,6 +231,10 @@ bool SBR2PathFinder::find_safe_cell(
                 continue;
             }
 
+            if (next_frame >= max_frames) {
+                continue;
+            }
+
             if (visited[next_frame][ny][nx]) {
                 continue;
             }
@@ -246,6 +250,11 @@ bool SBR2PathFinder::find_safe_cell(
         // WAITは後回し
         {
             i32 wait_frame = cur.frame + 1;
+
+            if (wait_frame >= max_frames) {
+                continue;
+            }
+            
             if (wait_frame < max_frames &&
                 !visited[wait_frame][cur.y][cur.x] &&
                 can_wait(cur.x, cur.y, cur.frame)) {
@@ -337,7 +346,11 @@ bool SBR2PathFinder::find_escape_action(
             }
         }
 
-        if (safe_long_enough) {
+        // 開始地点そのものが安全でも、即 WAIT を返さない
+        // まずは MOVE で逃げられる候補を探させる
+        bool is_start_node = (nodes[cur_index].parent_index == -1);
+
+        if (safe_long_enough && !is_start_node) {
             std::vector<SBR2Action> actions;
             int idx = cur_index;
 
