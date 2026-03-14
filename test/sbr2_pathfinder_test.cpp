@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 
-#include "core/sbr2_simulator.h"
-#include "core/sbr2_pathfinder.h"
+#include "sbr2_simulator.h"
+#include "sbr2_pathfinder.h"
 
 // ======================================================
 // テスト用開始位置

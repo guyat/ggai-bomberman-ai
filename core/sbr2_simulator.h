@@ -12,7 +12,7 @@ using i32 = int32_t;
 class SBR2Simulator
 {
 public:
-    static constexpr i32 MAX_SIMULATION_FRAMES = 256;
+    static constexpr i32 MAX_SIMULATION_FRAMES = 512;
 
 private:
     SBR2Board board_;
