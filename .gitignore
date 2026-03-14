@@ -1,0 +1,16 @@
+# build outputs
+*.exe
+*.out
+*.o
+*.obj
+
+# logs / temp
+*.log
+*.tmp
+
+# VSCode settings
+.vscode/
+
+# system files
+Thumbs.db
+.DS_Store
