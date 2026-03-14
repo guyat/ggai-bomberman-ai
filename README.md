@@ -2,13 +2,13 @@
 
 # GGAI Bomberman AI
 
-Super Bomberman R2 の 1vs1 用 AI を開発するプロジェクト。
+Steam版(PC版)Super Bomberman R2 の 1vs1 用 AI を開発するプロジェクト。
 
-このAIは **仮想コントローラー操作**でゲームをプレイすることを目標としています。
+このAIは SCP Virtual Bus Driverによる**仮想コントローラー操作**(scp_driver)でゲームをプレイすることを目標としています。
+
+相変わらずプログラミングはからっきしなので丁寧に、コピペで丸写し出来るような感じ多めでお願い致します。
 
 ---
-
-# GGAI Bomberman AI
 
 AI project for **Steam version Super Bomberman R2 (1v1)**.
 
