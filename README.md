@@ -441,3 +441,30 @@ AI が爆弾を置く前に、
 * 爆風持続フレームの厳密定義（現在実装定数との整合）
 * 盤面座標系の最終表現（11×13 の扱いと外周壁の内部表現）
 * center 6F / normal 11F を PathFinder にどう落とし込むか
+
+---
+
+# AI Architecture
+
+## 全体構造
+
+```text
+Game State
+   │
+   ▼
+Bomb Simulator
+   │
+   ▼
+DangerMap (future 512F)
+   │
+   ▼
+Time-aware BFS
+   │
+   ▼
+Escape Route Reconstruction
+   │
+   ▼
+AI Brain
+   │
+   ▼
+Controller Input (scp_driver)
