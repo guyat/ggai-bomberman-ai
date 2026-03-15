@@ -27,7 +27,8 @@ int main()
 {
     // ----------------------------------------
     // CASE 1:
-    // 危険ではない場所なら WAIT になるか
+    // 安全スタート時のAI行動確認
+    // PLACE_BOMB または WAIT を出力
     // ----------------------------------------
     {
         SBR2Simulator simulator;
@@ -143,7 +144,7 @@ int main()
 
         int start_x = 12;
         int start_y = 10;
-        int start_frame = 0;
+        int start_frame = 100;
 
         SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
 

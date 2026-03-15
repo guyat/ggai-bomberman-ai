@@ -22,7 +22,8 @@ public:
 
 private:
     std::array<std::array<CellType, WIDTH>, HEIGHT> cells_;
-
+    i8 enemy_x_ = -1;
+    i8 enemy_y_ = -1;
 public:
     SBR2Board()
     {
@@ -102,4 +103,21 @@ public:
 
         return get_cell(x, y) == CellType::EMPTY;
     }
+
+    void set_enemy_position(i8 x, i8 y)
+    {
+        enemy_x_ = x;
+        enemy_y_ = y;
+    }
+
+    i8 enemy_x() const
+    {
+        return enemy_x_;
+    }
+
+    i8 enemy_y() const
+    {
+        return enemy_y_;
+    }
+
 };

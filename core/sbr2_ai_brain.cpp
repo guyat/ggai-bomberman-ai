@@ -1,5 +1,7 @@
 #include "sbr2_ai_brain.h"
 
+static int last_bomb_frame = -1000;
+
 SBR2AIBrain::SBR2AIBrain(
     const SBR2Simulator& simulator,
     const SBR2PathFinder& pathfinder
@@ -91,7 +93,12 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
     // 今は安全なら、置いてから逃げ切れるかを試す
     if (can_place_bomb_and_escape(x, y, frame))
     {
-        return SBR2Action::PLACE_BOMB;
+        // 連続爆弾防止
+        if (frame - last_bomb_frame > 20) {
+
+            last_bomb_frame = frame;
+            return SBR2Action::PLACE_BOMB;
+        }
     }
 
     return SBR2Action::WAIT;
