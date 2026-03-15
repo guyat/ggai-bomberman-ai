@@ -36,12 +36,19 @@ bool SBR2AIBrain::can_place_bomb_and_escape(i8 x, i8 y, i32 frame) const
         return false;
     }
 
+    // すでに危険マスなら置かない
     if (simulator_.is_danger(frame, x, y))
     {
         return false;
     }
 
-    // 置いた後の未来を丸ごと別シミュレーションする
+    // すでにそのマスに爆弾があるなら置かない
+    if (simulator_.board().is_bomb(x, y))
+    {
+        return false;
+    }
+
+    // 爆弾を置いた未来を別シミュレーション
     SBR2Simulator sim_after_place = simulator_;
     sim_after_place.add_bomb(x, y, frame);
     sim_after_place.simulate();
@@ -53,7 +60,7 @@ bool SBR2AIBrain::can_place_bomb_and_escape(i8 x, i8 y, i32 frame) const
 
     SBR2EscapeResult result{};
 
-    // 自分で置いた爆弾の爆発終了まで生き残れるか確認
+    // 自分で置いた爆弾の爆発～爆風終了まで
     const i32 safe_until_frame =
         frame + SBR2Bomb::EXPLOSION_TIMER + SBR2Bomb::FIRE_DURATION;
 
@@ -68,7 +75,7 @@ bool SBR2AIBrain::can_place_bomb_and_escape(i8 x, i8 y, i32 frame) const
 
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
-    // 近い未来に危険化するなら、まず逃げる
+    // 近い未来で危険化するなら、まず逃げる
     if (will_be_dangerous_soon(x, y, frame))
     {
         SBR2EscapeResult result{};
@@ -81,7 +88,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
         return SBR2Action::WAIT;
     }
 
-    // 安全なら、爆弾を置いてから逃げ切れるか試す
+    // 今は安全なら、置いてから逃げ切れるかを試す
     if (can_place_bomb_and_escape(x, y, frame))
     {
         return SBR2Action::PLACE_BOMB;

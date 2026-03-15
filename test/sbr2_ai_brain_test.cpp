@@ -47,7 +47,7 @@ int main()
         SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
 
         print_separator();
-        std::cout << "CASE 1: safe start / should WAIT\n";
+        std::cout << "CASE 1: safe start / should PLACE_BOMB if escape exists\n";
         std::cout << "action = " << action_to_string(action) << "\n";
     }
 
