@@ -2693,6 +2693,187 @@ AI Data Flow は今後
 
 より高度な戦術 AI を構成する予定。
 
+# AI Implementation Roadmap (Draft)
+
+この章では、GGAI を今後どの順番で実装・強化していくかを整理する。
+
+README に多くの設計章が追加されているが、  
+実装は一度にすべて行うのではなく、段階的に進める。
+
+---
+
+## Phase 1: 基本回避AI
+
+目的
+
+- DangerMap による未来危険判定
+- Time-aware BFS による安全経路探索
+- Escape Route Reconstruction による最初の1手抽出
+
+状態
+
+- 実装済み
+
+主な機能
+
+- 危険マスを避ける
+- 安全マスへ移動する
+- 「危険なら逃げる」という基本判断
+
+---
+
+## Phase 2: 爆弾設置AI
+
+目的
+
+- 爆弾を置いた後に自分が逃げ切れるか確認する
+- 逃げ切れる場合のみ爆弾を置く
+
+状態
+
+- 実装中 / 次の主目標
+
+主な機能
+
+- 仮想爆弾設置
+- 新しい DangerMap の再生成
+- PathFinder で逃走可能判定
+- PLACE_BOMB / WAIT の判断
+
+---
+
+## Phase 3: 攻撃判断AI
+
+目的
+
+- ただ置くだけでなく
+  敵に当たる可能性がある爆弾を優先する
+
+主な機能
+
+- KillMap の利用
+- Enemy Future Map の利用
+- 敵ヒット確率を考慮した設置
+
+---
+
+## Phase 4: Trap AI
+
+目的
+
+- 敵の逃げ道を減らす
+- 通路封鎖や角追い込みを行う
+
+主な機能
+
+- Enemy EscapeMap
+- Trap AI
+- Position Evaluation Map
+- Enemy Prediction
+
+---
+
+## Phase 5: Enemy Prediction 強化
+
+目的
+
+- 敵の未来位置予測の精度を上げる
+- CPU レベルごとの差を作る
+
+主な機能
+
+- Enemy Prediction Architecture
+- Enemy Prediction Policy
+- RANDOMISH / MIXED / OPTIMAL
+- CPU Level 連動
+
+---
+
+## Phase 6: 高度戦術AI
+
+目的
+
+- AI Decision System
+- AI State Machine
+- AI Data Flow
+- PathFinder Architecture
+
+などを統合し、より高度な判断を行う
+
+主な機能
+
+- ESCAPE
+- ATTACK
+- TRAP
+- POSITION
+- WAIT
+
+の戦術切り替え
+
+---
+
+## Phase 7: Advanced Techniques
+
+目的
+
+- 上級テクニックを AI が使えるようにする
+
+対象技
+
+- Bomb Tail
+- Throw Chain
+- Punch Chain
+- Kick Chain
+- Throw Death Size
+- Punch Death Size
+- Kick Death Size
+- Exploding Punch
+- Right Timing Exploding Punch
+
+---
+
+## Phase 8: CPU Level 完成
+
+目的
+
+- Lv1〜Lv20 の強さ差を完成させる
+- 敵予測精度
+- 使用技
+- ランダム性
+- Trap 精度
+
+などを段階調整する
+
+---
+
+## 最終目標
+
+最終的には以下を備えた AI を目指す。
+
+- 高精度な未来危険予測
+- 安全な回避
+- 爆弾設置後の生存確認
+- 敵未来位置予測
+- Trap AI
+- 上級テクニック使用
+- CPU レベル別難易度制御
+
+---
+
+## 現在位置
+
+現在の主な実装段階は
+
+Phase 2: 爆弾設置AI
+
+である。
+
+つまり次にやるべき最重要タスクは
+
+「置いた後に逃げられる場合のみ PLACE_BOMB する AI」
+
+の実装である。
+
 # PathFinder Architecture (Draft)
 
 PathFinder は、
