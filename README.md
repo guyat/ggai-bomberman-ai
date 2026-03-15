@@ -1,220 +1,217 @@
-# ggai-bomberman-ai
-
 # GGAI Bomberman AI
 
-Steam版(PC版)Super Bomberman R2 の 1vs1 用 AI を開発するプロジェクト。
+Repository:
+https://github.com/guyat/ggai-bomberman-ai
 
-このAIは SCP Virtual Bus Driverによる**仮想コントローラー操作**(scp_driver)でゲームをプレイすることを目標としています。
+Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1 用 AI** を開発するプロジェクトです。
 
-相変わらずプログラミングはからっきしなので丁寧に、コピペで丸写し出来るような感じ多めでお願い致します。
+このAIは **SCP Virtual Bus Driver（scp_driver）による仮想コントローラー入力**でゲームを操作することを前提としています。
 
----
-
-AI project for **Steam version Super Bomberman R2 (1v1)**.
-
-The goal of this project is to build a strong CPU opponent using  
-**virtual controller input** and frame-level simulation.
-
-This AI is currently focused on **explosion prediction and escape logic**.
+- 対象ゲーム: Steam版 Super Bomberman R2
+- 対象ルール: 1vs1
+- 目的: フレーム単位の未来予測を使って、**高精度な回避・爆弾設置・将来的にはトラップまで行う強AI** を作る
 
 ---
 
-# Current AI Status
+# 開発方針
 
-Implemented systems
+開発者（ユーザー）はプログラミングに不慣れなため、作業指示は以下を強く重視します。
+
+- できるだけ丁寧に説明する
+- どのファイルをどう直すか明確にする
+- コピペで丸写ししやすい形で提示する
+- 「丸ごと置き換え」か「一部追記」かを必ず明示する
+
+また、長い会話ログだけに依存すると重要仕様が抜け落ちることがあるため、  
+**重要なゲーム仕様・AI前提は README.md に明文化して固定資産化する** 方針とします。
+
+---
+
+# 現在のAI実装状況
+
+## 実装済み
 
 - Bomb simulator
-- DangerMap (future explosion prediction)
-- Time-aware BFS pathfinding
+- DangerMap（未来爆風予測）
+- Time-aware BFS
 - Safe cell search
-- Route reconstruction
+- Escape route reconstruction
 - First action extraction
-- AI Brain decision layer
+- AI Brain
 - Future danger escape AI
 
-The AI can already detect future explosions and escape safely.
+## 現在できること
+
+- 未来の爆風を予測できる
+- 近い未来で危険になるマスを避けられる
+- 時間付き BFS により、安全マスへの経路探索ができる
+- 経路から最初の行動を取り出せる
+- 「危険が近いなら逃げる」という判断ができる
+
+## 次の実装目標
+
+- 爆弾設置AI
+- 設置後に自分が逃げ切れるかのシミュレーション
+- 敵に当たる爆弾のみ置くロジック
+- トラップ / 閉じ込め
+- CPUレベル差（Lv1～Lv20）設計
 
 ---
 
-# Repository Structure
+# リポジトリ構成
 
-
+```text
 ggai/
-├ core/
-│ ├ sbr2_ai_brain.cpp
-│ ├ sbr2_ai_brain.h
-│ ├ sbr2_board.h
-│ ├ sbr2_bomb.h
-│ ├ sbr2_pathfinder.cpp
-│ ├ sbr2_pathfinder.h
-│ ├ sbr2_simulator.cpp
-│ └ sbr2_simulator.h
-│
-├ test/
-│ ├ sbr2_simulator_test.cpp
-│ ├ sbr2_pathfinder_test.cpp
-│ └ sbr2_ai_brain_test.cpp
-│
-├ README.md
-└ .gitignore
-
+├─ core/
+│  ├─ sbr2_ai_brain.cpp
+│  ├─ sbr2_ai_brain.h
+│  ├─ sbr2_board.h
+│  ├─ sbr2_bomb.h
+│  ├─ sbr2_pathfinder.cpp
+│  ├─ sbr2_pathfinder.h
+│  ├─ sbr2_simulator.cpp
+│  └─ sbr2_simulator.h
+├─ test/
+│  ├─ sbr2_simulator_test.cpp
+│  ├─ sbr2_pathfinder_test.cpp
+│  └─ sbr2_ai_brain_test.cpp
+├─ README.md
+└─ .gitignore
+````
 
 ---
 
-# Development Environment
+# 開発環境
 
-OS
-
-
-Windows
-
-
-Shell
-
-
-Git Bash (MINGW64)
-
-
-Compiler
-
-
-g++ (C++17)
-
-
-Working directory
-
-
-/c/Users/PC_User/Documents/GGAI/ggai
-
+* OS: Windows
+* Shell: Git Bash (MINGW64)
+* Compiler: g++ (C++17)
+* Working Directory: `/c/Users/PC_User/Documents/GGAI/ggai`
 
 ---
 
-# Game Specifications
+# ゲーム仕様（重要）
 
-Game
+## 対象ゲーム
 
+* Steam版 Super Bomberman R2
+* 1vs1
 
-Steam Super Bomberman R2
+## ステージ
 
+* 盤面サイズ: **11 × 13**
+* 外周は壁
+* 固定ハードブロックあり
+* ソフトブロックなし
+* プレイヤーはハードブロック上には立てない
 
-Mode
+## 爆弾性能
 
-
-1 vs 1
-
-
-Stage size
-
-
-11 × 13 tiles
-
-
-Blocks
-
-
-Outer walls
-Fixed hard blocks
-No soft blocks
-
-
-Bomb capacity
-
-
-8 bombs
-
-
-Explosion power
-
-
-8 tiles
-
+* 爆弾保有数: **8**（最大値固定）
+* 火力: **8**（最大値固定）
+* 爆風は一気に伸びる（途中フレームで1マスずつではない）
+* 爆風の到達は **同一フレーム内で一斉反映**
+* 爆風射程は最大 8 マス
 
 ---
 
-# Round Start Rule
+# ラウンド開始仕様（重要）
 
-SBR2 round start behavior
+SBR2 のラウンド開始時は以下の流れです。
 
-
-READY appears
+```text
+READY 表示
 ↓
-Players can move
+この間は移動可能
 ↓
-GO! appears
+GO! 表示
 ↓
-Bomb placement becomes available
+爆弾設置可能になる
+```
 
+つまり、
 
-The AI must respect this rule.
+* **READY 中は移動できる**
+* **READY 中は爆弾を置けない**
+* **GO! が出てから爆弾を置ける**
 
----
-
-# Frame Timing Reference
-
-All timings were measured by analyzing  
-**60 FPS video frame-by-frame**.
-
----
-
-# Bomb Timing
-
-Bomb placement
-
-
-frame 0
-
-
-Explosion
-
-
-frame 153
-
-
-Chain explosion delay
-
-
-10 frames
-
-
-Explosion spread
-
-
-Instant propagation
-Range = 8 tiles
-
+AI はこの仕様を尊重する必要があります。
 
 ---
 
-# Player Movement Timing
+# フレーム計測の前提
 
-Movement timing was measured from tile center.
+すべてのタイミングは、**60FPS の配信アーカイブを1フレームずつコマ送りで解析**して得た値を基準にします。
 
-### First movement from tile center
+---
 
+# 爆弾と爆風のフレーム仕様
 
-0F movement starts
+## 通常爆発
+
+* 爆弾を置いたフレームを **0F** とする
+* **153F で爆発**
+
+## 誘爆（Chain）
+
+* ある爆弾の爆風が別の爆弾に当たった場合、
+* **10フレーム後に誘爆側の爆弾が爆発**
+
+例:
+
+```text
+A が爆発
+↓
+A の爆風が B に当たる
+↓
+10F 後に B が爆発
+↓
+さらに B の爆風が C に当たれば、その 10F 後に C が爆発
+```
+
+## 爆風の広がり方
+
+* 爆風は徐々に1マスずつ伸びるのではなく、**射程内に一気に出る**
+* 射程内の爆風は **同じフレームで全部出る**
+* 火力 8 の場合、最大 8 マス先まで同一フレームで危険化する
+
+---
+
+# プレイヤー移動仕様（超重要）
+
+## 基本方針
+
+プレイヤー移動は **マスの中心から移動開始するケース** と、
+**通常の連続移動中のケース** を分けて扱う必要があります。
+
+これを落とすと、回避AIや経路探索の正しさが崩れます。
+
+---
+
+## 1. マス中央から移動開始した場合
+
+```text
+0F  移動開始
 1F
 2F
 3F
 4F
-5F still considered inside the original tile
-6F reaches the next tile
+5F  まだ元のマスにいる扱い
+6F  次のマスに到達
+```
 
+つまり:
 
-Therefore:
-
-
-center → adjacent tile = 6 frames
-
+* **center → next = 6F**
 
 ---
 
-### Continuous movement
+## 2. 通常の連続移動
 
-Once a player has reached the next tile:
+1マス進んで、すでに次マスに到達した後の連続移動は以下。
 
-
-0F tile reached
+```text
+0F  現在マスに到達したフレーム
 1F
 2F
 3F
@@ -224,56 +221,46 @@ Once a player has reached the next tile:
 7F
 8F
 9F
-10F still inside current tile
-11F reaches the next tile
+10F  まだそのマスにいる扱い
+11F  次のマスに到達
+```
 
+つまり:
 
-Therefore:
-
-
-normal grid movement = 11 frames per tile
-
+* **normal move = 11F / 1マス**
 
 ---
 
-# Current AI Simplification
+## 現在実装上の簡略化
 
-For the current implementation the pathfinder uses
+現時点の PathFinder は、実装簡略化のため
 
+* **MOVE_FRAMES = 11**
 
-MOVE_FRAMES = 11
+で統一している箇所があります。
 
+これは将来的には改善対象です。
+理想的には以下を分けて扱う必要があります。
 
-for all movement calculations.
-
-Future improvements may include:
-
-
-center movement = 6F
-continuous movement = 11F
-
-
-to achieve more precise simulation.
+* 最初の1歩: 6F
+* 連続移動: 11F
 
 ---
 
-# DangerMap
+# DangerMap 仕様
 
-Explosion prediction horizon
-
-
-512 frames
-
-
-DangerMap predicts all explosion tiles over time and is used by the pathfinder.
+* 未来予測範囲: **512F**
+* DangerMap は、各フレーム・各マスが危険かどうかを保持する
+* DangerMap は爆弾・誘爆・爆風をすべて考慮して生成される
+* Pathfinder / Escape AI はこの DangerMap を参照して行動を決める
 
 ---
 
-# AI Architecture
+# AI設計の基本思想
 
-Current decision pipeline
+## 現在のパイプライン
 
-
+```text
 DangerMap
 ↓
 Time-aware BFS
@@ -282,56 +269,175 @@ Safe cell detection
 ↓
 Escape route reconstruction
 ↓
-AI Brain decision
+AI Brain
+```
 
+## 現在の優先順位
 
-The current AI prioritizes **survival and explosion avoidance**.
+現時点のAIは **攻撃より生存優先** です。
 
----
+基本思想:
 
-# Test Configuration
-
-For reproducibility during development
-
-
-AI spawn = bottom right
-Enemy spawn = top left
-
-
-Actual game spawn positions are random.
+1. 今後危険になるかを予測
+2. 危険なら逃げる
+3. 安全なら待機または次の攻撃判断へ進む
 
 ---
 
-# Planned Future Features
+# テスト前提
 
+再現性確保のため、開発中のテストでは開始位置を固定する。
 
-Bomb placement AI
-Enemy tracking
-Trap logic
-CPU difficulty levels (Lv1–Lv20)
+* AI = 右下固定
+* 相手 = 左上固定
 
+ただし、本番仕様は固定ではなく、
 
-Example CPU levels
+* **4隅ランダム開始**
 
+です。
 
-Lv1 random movement
-Lv5 basic bomb avoidance
-Lv10 future danger escape
-Lv15 bomb placement
-Lv20 strategic trapping
-
+したがって、テストコードの固定開始位置は
+**再現性のための仮条件** であり、本番ロジックの前提にしてはいけません。
 
 ---
 
-# Project Goal
+# 現在のテスト状況
 
-The long-term goal is to create a **high-level Bomberman CPU AI** capable of
+確認済みの代表ケース:
 
+* CASE1: safe start → WAIT
+* CASE2: danger soon → ESCAPE成功
+* CASE3: Pathfinder と Brain が一致
 
-prediction
-escape
-bomb placement
-trapping opponents
+今後、爆弾設置AI実装後は以下のようなケースを増やす。
 
+* 安全時に PLACE_BOMB を返すか
+* 置いた後に逃げ切れないなら PLACE_BOMB しないか
+* 近い未来で危険なら設置より回避を優先するか
+* 誘爆込みで安全判定できるか
 
-using frame-level simulation.
+---
+
+# 次に実装する仕様：爆弾設置AI
+
+## 目標
+
+AI が爆弾を置く前に、
+
+* その場に今置いた場合の未来
+* 誘爆込みの未来
+* 置いた後、自分が逃げ切れるか
+
+をシミュレーションし、**逃げ切れる場合のみ爆弾を置く**。
+
+## 最低限の設置条件
+
+少なくとも以下を満たす必要がある。
+
+1. 現在マスが危険すぎない
+2. その場に爆弾を仮置きした未来を再シミュレーションできる
+3. 爆発まで・または爆発終了まで生き残れる逃走経路がある
+4. 逃げられない置き方はしない
+
+## 将来の強化
+
+* 敵に当たる時だけ置く
+* 相手の逃げ道を減らすように置く
+* トラップ化する置き方を優先
+* リスクとリターンで設置判断を調整
+
+---
+
+# 将来的に扱いたいアクション仕様
+
+## パンチ
+
+会話中に確認された特殊操作として **パンチ** がある。
+
+把握している内容:
+
+* パンチすると爆弾が移動する
+* もともとあった場所から **3マス先** へ飛ぶ / 移動する
+* 着弾後、**すぐ爆発**
+
+## 起爆パンチ
+
+さらに高度なテクニックとして **起爆パンチ** がある。
+
+把握している内容:
+
+* 誘爆までの10Fの途中（会話上では「5Fくらい」と表現）でパンチ入力すると起こる特殊挙動
+* かなり難しいテクニック
+* 現時点では優先度を下げ、まずは通常の回避・設置AIを先に完成させる
+
+### 注意
+
+このパンチ関連仕様は、まだ実装仕様として固め切っていない部分があるため、
+実装前に再検証すること。
+
+---
+
+# 実装上の注意点
+
+## 会話ログだけを信用しない
+
+このプロジェクトでは、長い会話や環境差によって重要仕様が抜ける可能性がある。
+そのため、最終判断は以下を基準とする。
+
+1. README.md
+2. 現在のローカルコード
+3. テスト結果
+
+## 特に落としてはいけない重要仕様
+
+* READY 中は移動できるが爆弾は置けない
+* GO 後に爆弾設置可能
+* 爆弾 153F
+* 誘爆 10F
+* center → next = 6F
+* normal move = 11F
+* DangerMap = 512F
+* 火力 8
+* 爆弾保有数 8
+* ステージ 11 × 13
+* ソフトブロックなし
+* 本番は4隅ランダム開始
+
+---
+
+# CPUレベル構想（将来）
+
+例:
+
+* Lv1: ほぼランダム移動
+* Lv5: 目先の爆風を避ける
+* Lv10: future danger escape
+* Lv15: 置き逃げ可能な爆弾設置
+* Lv20: 予測・誘導・トラップまで行う高難度AI
+
+---
+
+# 長期目標
+
+最終的には、以下を備えた **高レベルなボンバーマンCPU AI** を目指す。
+
+* 未来爆風予測
+* 時間付き経路探索
+* 安全な回避
+* 爆弾設置
+* 敵追い詰め
+* トラップ
+* レベル別難易度制御
+
+---
+
+# 要確認 / 再検証メモ
+
+以下は会話中に出た内容だが、実装に入る前に再検証したい項目。
+
+* パンチ / 起爆パンチの厳密フレーム
+* READY 中の移動可否の細部
+* 爆風持続フレームの厳密定義（現在実装定数との整合）
+* 盤面座標系の最終表現（11×13 の扱いと外周壁の内部表現）
+* center 6F / normal 11F を PathFinder にどう落とし込むか

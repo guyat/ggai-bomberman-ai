@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string>
 
-#include "sbr2_ai_brain.h"
-#include "sbr2_pathfinder.h"
-#include "sbr2_simulator.h"
+#include "../core/sbr2_ai_brain.h"
+#include "../core/sbr2_pathfinder.h"
+#include "../core/sbr2_simulator.h"
 
 std::string action_to_string(SBR2Action action)
 {
@@ -13,6 +13,7 @@ std::string action_to_string(SBR2Action action)
     case SBR2Action::DOWN:  return "DOWN";
     case SBR2Action::LEFT:  return "LEFT";
     case SBR2Action::RIGHT: return "RIGHT";
+    case SBR2Action::PLACE_BOMB: return "PLACE_BOMB";
     default:                return "UNKNOWN";
     }
 }
@@ -122,6 +123,39 @@ int main()
         }
 
         std::cout << "brain action = " << action_to_string(brain_action) << "\n";
+    }
+
+        // ----------------------------------------
+    // CASE 4:
+    // 安全スタートなら PLACE_BOMB を返せるか
+    // （置いた後に逃げ切れる場合のみ）
+    // ----------------------------------------
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+
+        // 爆弾なし
+        simulator.simulate();
+
+        const SBR2Board& board = simulator.board();
+        SBR2PathFinder pathfinder(board, simulator);
+        SBR2AIBrain brain(simulator, pathfinder);
+
+        int start_x = 12;
+        int start_y = 10;
+        int start_frame = 0;
+
+        SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
+
+        print_separator();
+        std::cout << "CASE 4: safe start / should PLACE_BOMB if escape exists\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (action == SBR2Action::PLACE_BOMB) {
+            std::cout << "OK: PLACE_BOMB returned.\n";
+        } else {
+            std::cout << "INFO: PLACE_BOMB was not returned.\n";
+        }
     }
 
     print_separator();
