@@ -8,13 +8,13 @@
 std::string action_to_string(SBR2Action action)
 {
     switch (action) {
-    case SBR2Action::WAIT:  return "WAIT";
-    case SBR2Action::UP:    return "UP";
-    case SBR2Action::DOWN:  return "DOWN";
-    case SBR2Action::LEFT:  return "LEFT";
-    case SBR2Action::RIGHT: return "RIGHT";
+    case SBR2Action::WAIT:       return "WAIT";
+    case SBR2Action::UP:         return "UP";
+    case SBR2Action::DOWN:       return "DOWN";
+    case SBR2Action::LEFT:       return "LEFT";
+    case SBR2Action::RIGHT:      return "RIGHT";
     case SBR2Action::PLACE_BOMB: return "PLACE_BOMB";
-    default:                return "UNKNOWN";
+    default:                     return "UNKNOWN";
     }
 }
 
@@ -25,63 +25,39 @@ void print_separator()
 
 int main()
 {
-    // ----------------------------------------
-    // CASE 1:
-    // 安全スタート時のAI行動確認
-    // PLACE_BOMB または WAIT を出力
-    // ----------------------------------------
+    // CASE 1
     {
         SBR2Simulator simulator;
         simulator.clear();
-
-        // 爆弾なし
         simulator.simulate();
 
         SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
-        
         board.set_enemy_position(1, 0);
-        
+
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
-        int start_x = 12;
-        int start_y = 10;
-        int start_frame = 0;
-
-        SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
+        SBR2Action action = brain.decide_next_action(12, 10, 0);
 
         print_separator();
         std::cout << "CASE 1: safe start / should WAIT if enemy is far\n";
         std::cout << "action = " << action_to_string(action) << "\n";
     }
 
-    // ----------------------------------------
-    // CASE 2:
-    // 未来で危険になる位置から、逃げ行動を返すか
-    // 右下開始(12,10)、その左の通路(11,10)に爆弾
-    // 爆弾は 153F で爆発
-    // 開始を 145F にすると、8F後に爆発なので
-    // WAIT だと危ない。逃げを返してほしい。
-    // ----------------------------------------
+    // CASE 2
     {
         SBR2Simulator simulator;
         simulator.clear();
-
         simulator.add_bomb(11, 10, 0);
         simulator.simulate();
 
         SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
-
         board.set_enemy_position(1, 0);
 
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
-        int start_x = 12;
-        int start_y = 10;
-        int start_frame = 138;
-
-        SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
+        SBR2Action action = brain.decide_next_action(12, 10, 138);
 
         print_separator();
         std::cout << "CASE 2: dangerous soon / should escape\n";
@@ -94,31 +70,22 @@ int main()
         }
     }
 
-    // ----------------------------------------
-    // CASE 3:
-    // Pathfinder の escape_action と AI Brain の結果を見比べる
-    // ----------------------------------------
+    // CASE 3
     {
         SBR2Simulator simulator;
         simulator.clear();
-
         simulator.add_bomb(11, 10, 0);
         simulator.simulate();
 
         SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
-
         board.set_enemy_position(1, 0);
 
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
-        int start_x = 12;
-        int start_y = 10;
-        int start_frame = 138;
-
         SBR2EscapeResult result{};
-        bool found = pathfinder.find_escape_action(start_x, start_y, start_frame, result);
-        SBR2Action brain_action = brain.decide_next_action(start_x, start_y, start_frame);
+        bool found = pathfinder.find_escape_action(12, 10, 138, result);
+        SBR2Action brain_action = brain.decide_next_action(12, 10, 138);
 
         print_separator();
         std::cout << "CASE 3: compare Pathfinder and Brain\n";
@@ -135,39 +102,313 @@ int main()
         std::cout << "brain action = " << action_to_string(brain_action) << "\n";
     }
 
-        // ----------------------------------------
-    // CASE 4:
-    // 安全スタートなら PLACE_BOMB を返せるか
-    // （置いた後に逃げ切れる場合のみ）
-    // ----------------------------------------
+    // CASE 4
     {
         SBR2Simulator simulator;
         simulator.clear();
-
-        // 爆弾なし
         simulator.simulate();
 
         SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
-
         board.set_enemy_position(1, 0);
 
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
-        int start_x = 12;
-        int start_y = 10;
-        int start_frame = 100;
-
-        SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
+        SBR2Action action = brain.decide_next_action(12, 10, 100);
 
         print_separator();
-        std::cout << "CASE 4: safe start / should WAIT if enemy is far\n";
+        std::cout << "CASE 4: safe start / may reposition instead of WAIT\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (action == SBR2Action::WAIT) {
+            std::cout << "OK: WAIT returned.\n";
+        } else {
+            std::cout << "OK: repositioning is allowed in current AI.\n";
+        }
+    }
+
+    // CASE 5
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(8, 10);
+
+        SBR2PathFinder pathfinder(board, simulator);
+        SBR2AIBrain brain(simulator, pathfinder);
+
+        SBR2Action action = brain.decide_next_action(12, 10, 200);
+
+        print_separator();
+        std::cout << "CASE 5: straight-line kill / should PLACE_BOMB\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
         if (action == SBR2Action::PLACE_BOMB) {
             std::cout << "OK: PLACE_BOMB returned.\n";
         } else {
-            std::cout << "OK: WAIT returned because enemy is far.\n";
+            std::cout << "ERROR: expected PLACE_BOMB.\n";
+        }
+    }
+
+    // CASE 6
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(11, 6);
+
+        SBR2PathFinder pathfinder(board, simulator);
+        SBR2AIBrain brain(simulator, pathfinder);
+
+        SBR2Action action = brain.decide_next_action(11, 10, 300);
+
+        print_separator();
+        std::cout << "CASE 6: blocked straight-line / should not PLACE_BOMB\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (action == SBR2Action::PLACE_BOMB) {
+            std::cout << "ERROR: expected non-PLACE_BOMB.\n";
+        } else {
+            std::cout << "OK: did not place bomb because hard block blocks the line.\n";
+        }
+    }
+
+    // CASE 7
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(9, 9);
+
+        SBR2PathFinder pathfinder(board, simulator);
+        SBR2AIBrain brain(simulator, pathfinder);
+
+        SBR2Action action = brain.decide_next_action(8, 10, 350);
+
+        print_separator();
+        std::cout << "CASE 7: one-step enemy prediction / level 20 may PLACE_BOMB\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (action == SBR2Action::PLACE_BOMB) {
+            std::cout << "OK: PLACE_BOMB returned by one-step prediction.\n";
+        } else {
+            std::cout << "NOTE: did not place bomb (escape may be unsafe).\n";
+        }
+    }
+
+    // CASE 8
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(1, 1);
+
+        SBR2PathFinder pathfinder(board, simulator);
+        SBR2AIBrain brain(simulator, pathfinder);
+
+        int start_x = 4;
+        int start_y = 5;
+        int start_frame = 100;
+
+        SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
+
+        print_separator();
+        std::cout << "CASE 8: trap check / note-only case\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+        std::cout << "NOTE: trap logic exists, and repositioning is also allowed here.\n";
+    }
+
+    // CASE 9
+    // Lv5 は直線キルをまだ使わないので WAIT を期待
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(8, 10);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 5;
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(12, 10, 200);
+
+        print_separator();
+        std::cout << "CASE 9: level 5 / should WAIT on straight-line setup\n";
+        std::cout << "brain level = " << brain.ai_level() << "\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (action == SBR2Action::WAIT) {
+            std::cout << "OK: low level did not use straight-line kill.\n";
+        } else {
+            std::cout << "ERROR: expected WAIT for level 5.\n";
+        }
+    }
+
+    // CASE 10
+    // Lv20 は直線キルを使うので PLACE_BOMB を期待
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(8, 10);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(12, 10, 200);
+
+        print_separator();
+        std::cout << "CASE 10: level 20 / should PLACE_BOMB on straight-line setup\n";
+        std::cout << "brain level = " << brain.ai_level() << "\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (action == SBR2Action::PLACE_BOMB) {
+            std::cout << "OK: high level used straight-line kill.\n";
+        } else {
+            std::cout << "ERROR: expected PLACE_BOMB for level 20.\n";
+        }
+    }
+
+    // CASE 11
+    // Aggressive は強引に攻める
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(8, 10);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(12, 10, 200);
+
+        print_separator();
+        std::cout << "CASE 11: Aggressive / should PLACE_BOMB\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+    }
+
+    // CASE 12
+    // Careful は慎重（安全重視）
+    // 危険なら攻撃せず回避、または慎重行動を取れればOK
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+
+        simulator.add_bomb(11, 10, 0);
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(8, 10);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Careful;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(12, 10, 138);
+
+        print_separator();
+        std::cout << "CASE 12: Careful / should avoid reckless bomb placement\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (action == SBR2Action::PLACE_BOMB) {
+            std::cout << "ERROR: Careful should avoid reckless bomb placement here.\n";
+        } else {
+            std::cout << "OK: Careful avoided reckless bomb placement.\n";
+        }
+    }
+
+    // CASE 13
+    // Tricky はtrap寄り
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(5, 5);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Tricky;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+        print_separator();
+        std::cout << "CASE 13: Tricky / trap-oriented\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+    }
+
+    // CASE 14
+    // Tricky専用 trap テスト
+    // set_block は無いので、既存爆弾で逃げ道を塞ぐ
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+
+        // 敵の周囲を爆弾でかなり狭くする
+        simulator.add_bomb(5, 3, 0);
+        simulator.add_bomb(7, 3, 0);
+        simulator.add_bomb(6, 2, 0);
+
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+
+        i8 self_x = 6;
+        i8 self_y = 5;
+
+        board.set_enemy_position(6, 3);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Tricky;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(self_x, self_y, 100);
+
+        print_separator();
+        std::cout << "CASE 14: Tricky trap test / should PLACE_BOMB if trap works\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (action == SBR2Action::PLACE_BOMB) {
+            std::cout << "OK: Tricky placed bomb for trap.\n";
+        } else {
+            std::cout << "NOTE: Tricky did not use trap in this setup.\n";
         }
     }
 
