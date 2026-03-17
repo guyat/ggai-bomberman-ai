@@ -1,4 +1,5 @@
 #include "sbr2_ai_brain.h"
+#include <cmath>
 
 static int last_bomb_frame = -1000;
 
@@ -13,7 +14,7 @@ SBR2AIBrain::SBR2AIBrain(
 
 bool SBR2AIBrain::will_be_dangerous_soon(i8 x, i8 y, i32 frame) const
 {
-    const int LOOKAHEAD = 20;
+    const int LOOKAHEAD = 40;
 
     for (int t = 0; t <= LOOKAHEAD; ++t)
     {
@@ -75,14 +76,34 @@ bool SBR2AIBrain::can_place_bomb_and_escape(i8 x, i8 y, i32 frame) const
     );
 }
 
+bool SBR2AIBrain::is_enemy_close(i8 x, i8 y) const
+{
+    i8 ex = simulator_.board().enemy_x();
+    i8 ey = simulator_.board().enemy_y();
+
+    if (ex < 0 || ey < 0)
+    {
+        return false;
+    }
+
+    int dist = std::abs(ex - x) + std::abs(ey - y);
+
+    return dist <= 3;
+}
+
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
-    // 近い未来で危険化するなら、まず逃げる
-    if (will_be_dangerous_soon(x, y, frame))
-    {
-        SBR2EscapeResult result{};
+    SBR2EscapeResult result{};
 
-        if (pathfinder_.find_escape_action(x, y, frame, result))
+    // =========================
+    // ① 逃げられるかチェック
+    // =========================
+    bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);
+
+    // 逃げられない or 危険になるなら逃げる
+    if (!can_escape || will_be_dangerous_soon(x, y, frame))
+    {
+        if (can_escape)
         {
             return result.first_action;
         }
@@ -90,16 +111,23 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
         return SBR2Action::WAIT;
     }
 
-    // 今は安全なら、置いてから逃げ切れるかを試す
-    if (can_place_bomb_and_escape(x, y, frame))
+    // =========================
+    // ② 攻撃判断
+    // =========================
+    if (is_enemy_close(x, y))
     {
-        // 連続爆弾防止
-        if (frame - last_bomb_frame > 20) {
-
-            last_bomb_frame = frame;
-            return SBR2Action::PLACE_BOMB;
+        if (can_place_bomb_and_escape(x, y, frame))
+        {
+            if (frame - last_bomb_frame > 20)
+            {
+                last_bomb_frame = frame;
+                return SBR2Action::PLACE_BOMB;
+            }
         }
     }
 
+    // =========================
+    // ③ 待機
+    // =========================
     return SBR2Action::WAIT;
 }

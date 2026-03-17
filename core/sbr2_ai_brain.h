@@ -25,4 +25,5 @@ private:
 
     bool will_be_dangerous_soon(i8 x, i8 y, i32 frame) const;
     bool can_place_bomb_and_escape(i8 x, i8 y, i32 frame) const;
+    bool is_enemy_close(i8 x, i8 y) const;
 };

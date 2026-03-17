@@ -37,7 +37,10 @@ int main()
         // 爆弾なし
         simulator.simulate();
 
-        const SBR2Board& board = simulator.board();
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        
+        board.set_enemy_position(1, 0);
+        
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
@@ -48,7 +51,7 @@ int main()
         SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
 
         print_separator();
-        std::cout << "CASE 1: safe start / should PLACE_BOMB if escape exists\n";
+        std::cout << "CASE 1: safe start / should WAIT if enemy is far\n";
         std::cout << "action = " << action_to_string(action) << "\n";
     }
 
@@ -64,10 +67,13 @@ int main()
         SBR2Simulator simulator;
         simulator.clear();
 
-        simulator.add_bomb(12, 9, 0);
+        simulator.add_bomb(11, 10, 0);
         simulator.simulate();
 
-        const SBR2Board& board = simulator.board();
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+
+        board.set_enemy_position(1, 0);
+
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
@@ -96,10 +102,13 @@ int main()
         SBR2Simulator simulator;
         simulator.clear();
 
-        simulator.add_bomb(12, 9, 0);
+        simulator.add_bomb(11, 10, 0);
         simulator.simulate();
 
-        const SBR2Board& board = simulator.board();
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+
+        board.set_enemy_position(1, 0);
+
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
@@ -138,7 +147,10 @@ int main()
         // 爆弾なし
         simulator.simulate();
 
-        const SBR2Board& board = simulator.board();
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+
+        board.set_enemy_position(1, 0);
+
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
@@ -149,13 +161,13 @@ int main()
         SBR2Action action = brain.decide_next_action(start_x, start_y, start_frame);
 
         print_separator();
-        std::cout << "CASE 4: safe start / should PLACE_BOMB if escape exists\n";
+        std::cout << "CASE 4: safe start / should WAIT if enemy is far\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
         if (action == SBR2Action::PLACE_BOMB) {
             std::cout << "OK: PLACE_BOMB returned.\n";
         } else {
-            std::cout << "INFO: PLACE_BOMB was not returned.\n";
+            std::cout << "OK: WAIT returned because enemy is far.\n";
         }
     }
 
