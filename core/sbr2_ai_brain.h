@@ -52,7 +52,7 @@ private:
     mutable int held_reposition_until_frame_ = -1;
 
     bool is_move_action(SBR2Action action) const;
-    int same_direction_reposition_limit() const;
+    int same_direction_reposition_limit(i8 x, i8 y) const;
     SBR2Action remember_reposition_action(SBR2Action action) const;
     SBR2Action reset_reposition_state_and_return(SBR2Action action) const;
 

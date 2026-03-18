@@ -141,28 +141,50 @@ bool SBR2AIBrain::is_move_action(SBR2Action action) const
     }
 }
 
-int SBR2AIBrain::same_direction_reposition_limit() const
+int SBR2AIBrain::same_direction_reposition_limit(i8 x, i8 y) const
 {
     int level = normalized_ai_level();
+    int limit = 3;
 
     if (style() == SBR2AIStyle::Careful)
     {
         if (level >= 15)
-            return 2;
-        return 1;
+            limit = 2;
+        else
+            limit = 1;
     }
-
-    if (style() == SBR2AIStyle::Tricky)
+    else if (style() == SBR2AIStyle::Tricky)
     {
         if (level >= 15)
-            return 3;
-        return 2;
+            limit = 3;
+        else
+            limit = 2;
+    }
+    else
+    {
+        // Aggressive
+        if (level >= 15)
+            limit = 4;
+        else
+            limit = 3;
     }
 
-    // Aggressive
-    if (level >= 15)
-        return 4;
-    return 3;
+    // 敵が近いほど、同じ方向への連打を早めに抑える
+    i8 enemy_x = simulator_.board().enemy_x();
+    i8 enemy_y = simulator_.board().enemy_y();
+    int enemy_dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
+
+    if (enemy_dist <= 4 && limit > 1)
+    {
+        --limit;
+    }
+
+    if (enemy_dist <= 2 && limit > 1)
+    {
+        --limit;
+    }
+
+    return limit;
 }
 
 SBR2Action SBR2AIBrain::remember_reposition_action(SBR2Action action) const
@@ -208,21 +230,33 @@ int SBR2AIBrain::reposition_hold_extra_frames(i8 x, i8 y) const
     int dist_up = y - min_y;
     int dist_down = max_y - y;
 
-    int min_dist = std::min(
+    int min_dist_to_wall = std::min(
         std::min(dist_left, dist_right),
         std::min(dist_up, dist_down));
 
-    if (min_dist <= 1)
+    int hold_frames = 1;
+
+    // 壁際ほど長めに保持
+    if (min_dist_to_wall <= 1)
     {
-        return 3;
+        hold_frames = 3;
+    }
+    else if (min_dist_to_wall <= 2)
+    {
+        hold_frames = 2;
     }
 
-    if (min_dist <= 2)
+    // ただし敵が近いなら、反応を鈍くしすぎないように1段短くする
+    i8 enemy_x = simulator_.board().enemy_x();
+    i8 enemy_y = simulator_.board().enemy_y();
+    int enemy_dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
+
+    if (enemy_dist <= 4 && hold_frames > 1)
     {
-        return 2;
+        --hold_frames;
     }
 
-    return 1;
+    return hold_frames;
 }
 
 SBR2Action SBR2AIBrain::apply_reposition_hold(
@@ -781,6 +815,19 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
             second = SBR2Action::LEFT;
     }
 
+    // 敵が近いとき、たまに第2候補を優先して動きに揺れを出す
+    // ただし一直線で詰められる形なら、揺れを抑えて素直に詰める
+    int enemy_dist = std::abs(dx) + std::abs(dy);
+    bool aligned_straight = (dx == 0 || dy == 0);
+
+    if (enemy_dist <= 4 && !aligned_straight)
+    {
+        if ((frame % 3) == 0)
+        {
+            std::swap(first, second);
+        }
+    }
+
     auto can_use_action = [&](SBR2Action action) -> bool
     {
         switch (action)
@@ -810,7 +857,7 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
     bool avoid_same_direction_too_much =
         is_move_action(first) &&
         first == last_reposition_action_ &&
-        same_direction_reposition_count_ >= same_direction_reposition_limit();
+        same_direction_reposition_count_ >= same_direction_reposition_limit(self_x, self_y);
 
     if (avoid_same_direction_too_much && can_use_action(second))
     {
