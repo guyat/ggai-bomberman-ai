@@ -440,13 +440,54 @@ bool SBR2AIBrain::can_hit_enemy_now_or_after_one_step(
         return false;
     }
 
-    const std::array<i8, 4> dx = {0, 0, -1, 1};
-    const std::array<i8, 4> dy = {-1, 1, 0, 0};
+    std::array<i8, 4> cand_x{};
+    std::array<i8, 4> cand_y{};
+    int cand_count = 0;
 
-    for (int i = 0; i < 4; ++i)
+    auto add_candidate = [&](i8 nx, i8 ny)
     {
-        i8 nx = ex + dx[i];
-        i8 ny = ey + dy[i];
+        for (int i = 0; i < cand_count; ++i)
+        {
+            if (cand_x[i] == nx && cand_y[i] == ny)
+            {
+                return;
+            }
+        }
+
+        cand_x[cand_count] = nx;
+        cand_y[cand_count] = ny;
+        ++cand_count;
+    };
+
+    // まずは「自分から離れる方向」を優先して予測する
+    if (ex > x)
+    {
+        add_candidate(ex + 1, ey);
+    }
+    else if (ex < x)
+    {
+        add_candidate(ex - 1, ey);
+    }
+
+    if (ey > y)
+    {
+        add_candidate(ex, ey + 1);
+    }
+    else if (ey < y)
+    {
+        add_candidate(ex, ey - 1);
+    }
+
+    // その後に残りの1歩候補も全部見る
+    add_candidate(ex, ey - 1);
+    add_candidate(ex, ey + 1);
+    add_candidate(ex - 1, ey);
+    add_candidate(ex + 1, ey);
+
+    for (int i = 0; i < cand_count; ++i)
+    {
+        i8 nx = cand_x[i];
+        i8 ny = cand_y[i];
 
         if (!board.is_inside(nx, ny))
         {
@@ -601,13 +642,34 @@ bool SBR2AIBrain::is_trap_possible(i8 self_x, i8 self_y, i32 frame) const
         return false;
     }
 
+    const SBR2Board &board = simulator_.board();
+    i8 enemy_x = board.enemy_x();
+    i8 enemy_y = board.enemy_y();
+
+    if (enemy_x < 0 || enemy_y < 0)
+    {
+        return false;
+    }
+
+    int enemy_dist = std::abs(enemy_x - self_x) + std::abs(enemy_y - self_y);
+
     int survivable_cells =
         count_enemy_survivable_cells_after_bomb(self_x, self_y, frame);
 
-    // Tricky 高レベルは、直線上にいなくても
-    // 「逃げ道がかなり少ない」だけで置きに行く
+    // 近距離なら少しだけ強気にトラップ判定を広げる
+    if (enemy_dist <= 3)
+    {
+        survivable_cells -= 1;
+    }
+
+    // Tricky 高レベルは、近距離ならさらに少しだけ trap を狙いやすくする
     if (style() == SBR2AIStyle::Tricky && normalized_ai_level() >= 18)
     {
+        if (enemy_dist <= 2)
+        {
+            survivable_cells -= 1;
+        }
+
         return survivable_cells <= threshold;
     }
 
@@ -659,6 +721,17 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             {
                 bool safe = can_place_bomb_and_escape(x, y, frame);
 
+                // 近距離なら少し強気にする
+                i8 enemy_x = simulator_.board().enemy_x();
+                i8 enemy_y = simulator_.board().enemy_y();
+                int enemy_dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
+
+                if (enemy_dist <= 2)
+                {
+                    // 多少リスクがあっても置きに行く
+                    safe = safe || can_place_bomb_and_escape(x, y, frame);
+                }
+
                 if (style() == SBR2AIStyle::Careful)
                 {
                     safe = can_place_bomb_and_escape_strict(x, y, frame);
@@ -668,6 +741,64 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                 {
                     last_bomb_frame_ = frame;
                     return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                }
+            }
+
+            // ===== 誘導ボム（簡易） =====
+            if (style() == SBR2AIStyle::Tricky ||
+                (style() == SBR2AIStyle::Aggressive && normalized_ai_level() >= 15))
+            {
+                i8 enemy_x = simulator_.board().enemy_x();
+                i8 enemy_y = simulator_.board().enemy_y();
+
+                int dx = enemy_x - x;
+                int dy = enemy_y - y;
+
+                if (dx != 0 && dy != 0 && std::abs(dx) + std::abs(dy) <= 4)
+                {
+                    bool enemy_can_escape_lr =
+                        can_step_to(enemy_x - 1, enemy_y) ||
+                        can_step_to(enemy_x + 1, enemy_y);
+
+                    bool enemy_can_escape_ud =
+                        can_step_to(enemy_x, enemy_y - 1) ||
+                        can_step_to(enemy_x, enemy_y + 1);
+
+                    if (enemy_can_escape_lr && std::abs(dx) <= 2)
+                    {
+                        if (can_place_bomb_and_escape(x, y, frame))
+                        {
+                            last_bomb_frame_ = frame;
+                            return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                        }
+                    }
+
+                    if (enemy_can_escape_ud && std::abs(dy) <= 2)
+                    {
+                        if (can_place_bomb_and_escape(x, y, frame))
+                        {
+                            last_bomb_frame_ = frame;
+                            return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                        }
+                    }
+                }
+            }
+
+            // ===== 詰ませボム（強化版） =====
+            if (style() == SBR2AIStyle::Tricky ||
+                (style() == SBR2AIStyle::Aggressive && normalized_ai_level() >= 17))
+            {
+                int survivable =
+                    count_enemy_survivable_cells_after_bomb(x, y, frame);
+
+                // 生存マスが少ないなら強気に置く
+                if (survivable <= 2)
+                {
+                    if (can_place_bomb_and_escape(x, y, frame))
+                    {
+                        last_bomb_frame_ = frame;
+                        return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                    }
                 }
             }
         }
@@ -710,7 +841,18 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
         i8 enemy_y = simulator_.board().enemy_y();
         int dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
 
-        if (dist >= 4)
+        int reposition_start_dist = 4;
+
+        if (style() == SBR2AIStyle::Aggressive && normalized_ai_level() >= 15)
+        {
+            reposition_start_dist = 3;
+        }
+        else if (style() == SBR2AIStyle::Tricky && normalized_ai_level() >= 15)
+        {
+            reposition_start_dist = 3;
+        }
+
+        if (dist >= reposition_start_dist)
         {
             if (settings_.style == SBR2AIStyle::Aggressive)
             {
@@ -737,6 +879,14 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             }
         }
     }
+
+    // 安全なら軽く詰める（WAIT減らす）
+    // if (!will_be_dangerous_soon(x, y, frame))
+    // {
+    //     SBR2Action move = move_toward_enemy(x, y, frame);
+    //     return remember_reposition_action(
+    //         apply_reposition_hold(move, x, y, frame));
+    // }
 
     return reset_reposition_state_and_return(SBR2Action::WAIT);
 }
@@ -790,6 +940,10 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
     SBR2Action first = SBR2Action::WAIT;
     SBR2Action second = SBR2Action::WAIT;
 
+    bool diagonal_relation = (dx != 0 && dy != 0);
+    int enemy_dist = std::abs(dx) + std::abs(dy);
+
+    // 基本は遠い軸を優先
     if (std::abs(dx) > std::abs(dy))
     {
         if (dx > 0)
@@ -815,9 +969,38 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
             second = SBR2Action::LEFT;
     }
 
+    // 斜め + 近距離では、行/列を合わせる動きを少し優先する
+    // Tricky や高レベル Aggressive が、罠の形を作りやすくする狙い
+    if (diagonal_relation && enemy_dist <= 5)
+    {
+        bool prefer_line_up =
+            (style() == SBR2AIStyle::Tricky) ||
+            (style() == SBR2AIStyle::Aggressive && normalized_ai_level() >= 15);
+
+        if (prefer_line_up)
+        {
+            // 差が小さいときは frame に応じて優先軸を少し揺らす
+            // ただし「近づく方向」自体は維持する
+            if (std::abs(dx) == std::abs(dy))
+            {
+                if ((frame % 2) == 0)
+                {
+                    std::swap(first, second);
+                }
+            }
+            else if (std::abs(dx) + 1 >= std::abs(dy) &&
+                     std::abs(dy) + 1 >= std::abs(dx))
+            {
+                if ((frame % 3) == 1)
+                {
+                    std::swap(first, second);
+                }
+            }
+        }
+    }
+
     // 敵が近いとき、たまに第2候補を優先して動きに揺れを出す
     // ただし一直線で詰められる形なら、揺れを抑えて素直に詰める
-    int enemy_dist = std::abs(dx) + std::abs(dy);
     bool aligned_straight = (dx == 0 || dy == 0);
 
     if (enemy_dist <= 4 && !aligned_straight)
@@ -844,15 +1027,6 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
             return false;
         }
     };
-
-    // 壁際や境界で毎フレーム方針が揺れすぎないよう、
-    // 直前に決めた再配置方向を短時間だけ維持する
-    // if (frame <= held_reposition_until_frame_ &&
-    //     is_move_action(held_reposition_action_) &&
-    //     can_use_action(held_reposition_action_))
-    // {
-    //     return held_reposition_action_;
-    // }
 
     bool avoid_same_direction_too_much =
         is_move_action(first) &&
