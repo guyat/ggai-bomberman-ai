@@ -412,6 +412,50 @@ int main()
         }
     }
 
+    // CASE 15
+    // 同じ方向に無駄に突っ込みすぎないか確認
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        board.set_enemy_position(1, 0);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action a1 = brain.decide_next_action(12, 10, 100);
+        SBR2Action a2 = brain.decide_next_action(12, 10, 101);
+        SBR2Action a3 = brain.decide_next_action(12, 10, 102);
+        SBR2Action a4 = brain.decide_next_action(12, 10, 103);
+        SBR2Action a5 = brain.decide_next_action(12, 10, 104);
+
+        print_separator();
+        std::cout << "CASE 15: avoid too much same-direction reposition\n";
+        std::cout << "a1 = " << action_to_string(a1) << "\n";
+        std::cout << "a2 = " << action_to_string(a2) << "\n";
+        std::cout << "a3 = " << action_to_string(a3) << "\n";
+        std::cout << "a4 = " << action_to_string(a4) << "\n";
+        std::cout << "a5 = " << action_to_string(a5) << "\n";
+
+        if (a1 == SBR2Action::LEFT &&
+            a2 == SBR2Action::LEFT &&
+            a3 == SBR2Action::LEFT &&
+            a4 == SBR2Action::LEFT &&
+            a5 == SBR2Action::UP) {
+        std::cout << "OK: same-direction rush was softened on repeated calls.\n";
+        } else {
+        std::cout << "NOTE: result differed from expected pattern. Check streak control.\n";
+        }
+    }
+
     print_separator();
     return 0;
 }

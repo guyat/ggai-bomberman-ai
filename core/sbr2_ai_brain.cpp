@@ -117,6 +117,63 @@ int SBR2AIBrain::trap_survivable_cell_threshold() const
     return 2;
 }
 
+bool SBR2AIBrain::is_move_action(SBR2Action action) const
+{
+ switch (action) {
+ case SBR2Action::UP:
+ case SBR2Action::DOWN:
+ case SBR2Action::LEFT:
+ case SBR2Action::RIGHT:
+  return true;
+ default:
+  return false;
+ }
+}
+
+int SBR2AIBrain::same_direction_reposition_limit() const
+{
+ int level = normalized_ai_level();
+
+ if (style() == SBR2AIStyle::Careful) {
+  if (level >= 15) return 2;
+  return 1;
+ }
+
+ if (style() == SBR2AIStyle::Tricky) {
+  if (level >= 15) return 3;
+  return 2;
+ }
+
+ // Aggressive
+ if (level >= 15) return 4;
+ return 3;
+}
+
+SBR2Action SBR2AIBrain::remember_reposition_action(SBR2Action action) const
+{
+ if (!is_move_action(action)) {
+  last_reposition_action_ = SBR2Action::WAIT;
+  same_direction_reposition_count_ = 0;
+  return action;
+ }
+
+ if (action == last_reposition_action_) {
+  ++same_direction_reposition_count_;
+ } else {
+  last_reposition_action_ = action;
+  same_direction_reposition_count_ = 1;
+ }
+
+ return action;
+}
+
+SBR2Action SBR2AIBrain::reset_reposition_state_and_return(SBR2Action action) const
+{
+ last_reposition_action_ = SBR2Action::WAIT;
+ same_direction_reposition_count_ = 0;
+ return action;
+}
+
 bool SBR2AIBrain::will_be_dangerous_soon(i8 x, i8 y, i32 frame) const
 {
     const int LOOKAHEAD = 40;
@@ -449,125 +506,107 @@ bool SBR2AIBrain::is_trap_possible(i8 self_x, i8 self_y, i32 frame) const
 
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
-    SBR2EscapeResult result{};
+ SBR2EscapeResult result{};
+ bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);
 
-    bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);
+ if (!can_escape || will_be_dangerous_soon(x, y, frame)) {
+  if (can_escape) {
+   return reset_reposition_state_and_return(result.first_action);
+  }
+  return reset_reposition_state_and_return(SBR2Action::WAIT);
+ }
 
-    if (!can_escape || will_be_dangerous_soon(x, y, frame))
-    {
-        if (can_escape)
-        {
-            return result.first_action;
-        }
+ SBR2AIStyle s = style();
+ bool allow_risky =
+  (s == SBR2AIStyle::Aggressive) ||
+  (s == SBR2AIStyle::Tricky && normalized_ai_level() >= 18);
 
-        return SBR2Action::WAIT;
+ bool trap_first =
+  (s == SBR2AIStyle::Tricky && normalized_ai_level() >= 16);
+
+ bool tricky_trap_second_chance =
+  (s == SBR2AIStyle::Tricky && normalized_ai_level() >= 18);
+
+ if (frame - last_bomb_frame_ > bomb_cooldown_frames()) {
+  // 高レベルTrickyは trap を先に見る
+  if (trap_first && level_allows_trap()) {
+   if (is_trap_possible(x, y, frame)) {
+    last_bomb_frame_ = frame;
+    return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+   }
+  }
+
+  // 直線キル
+  if (level_allows_straight_kill()) {
+   if (can_hit_enemy_now_or_after_one_step(
+        x, y, level_allows_one_step_prediction())) {
+    bool safe = can_place_bomb_and_escape(x, y, frame);
+
+    if (style() == SBR2AIStyle::Careful) {
+     safe = can_place_bomb_and_escape_strict(x, y, frame);
     }
 
-    SBR2AIStyle s = style();
+    if (safe || allow_risky) {
+     last_bomb_frame_ = frame;
+     return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+    }
+   }
+  }
 
-    bool allow_risky =
-        (s == SBR2AIStyle::Aggressive) ||
-        (s == SBR2AIStyle::Tricky && normalized_ai_level() >= 18);
-
-    bool trap_first =
-        (s == SBR2AIStyle::Tricky && normalized_ai_level() >= 16);
-
-    bool tricky_trap_second_chance =
-        (s == SBR2AIStyle::Tricky && normalized_ai_level() >= 18);
-
-    if (frame - last_bomb_frame_ > bomb_cooldown_frames())
-    {
-        // 高レベルTrickyは trap を先に見る
-        if (trap_first && level_allows_trap())
-        {
-            if (is_trap_possible(x, y, frame))
-            {
-                last_bomb_frame_ = frame;
-                return SBR2Action::PLACE_BOMB;
-            }
-        }
-
-        // 直線キル
-        if (level_allows_straight_kill())
-        {
-            if (can_hit_enemy_now_or_after_one_step(
-                    x,
-                    y,
-                    level_allows_one_step_prediction()))
-            {
-                bool safe = can_place_bomb_and_escape(x, y, frame);
-
-                if (style() == SBR2AIStyle::Careful)
-                {
-                    safe = can_place_bomb_and_escape_strict(x, y, frame);
-                }
-
-                if (safe || allow_risky)
-                {
-                    last_bomb_frame_ = frame;
-                    return SBR2Action::PLACE_BOMB;
-                }
-            }
-        }
-
-        // trap（通常順）
-        if (!trap_first && level_allows_trap())
-        {
-            if (is_trap_possible(x, y, frame))
-            {
-                if (style() == SBR2AIStyle::Careful)
-                {
-                    if (!can_place_bomb_and_escape_strict(x, y, frame))
-                    {
-                        return SBR2Action::WAIT;
-                    }
-                }
-
-                last_bomb_frame_ = frame;
-                return SBR2Action::PLACE_BOMB;
-            }
-        }
-
-        // 高レベルTrickyだけ、最後にもう一度 trap を見る
-        if (tricky_trap_second_chance && level_allows_trap())
-        {
-            if (is_trap_possible(x, y, frame))
-            {
-                last_bomb_frame_ = frame;
-                return SBR2Action::PLACE_BOMB;
-            }
-        }
+  // trap（通常順）
+  if (!trap_first && level_allows_trap()) {
+   if (is_trap_possible(x, y, frame)) {
+    if (style() == SBR2AIStyle::Careful) {
+     if (!can_place_bomb_and_escape_strict(x, y, frame)) {
+      return reset_reposition_state_and_return(SBR2Action::WAIT);
+     }
     }
 
-    // ===== 人間っぽい動き：安全なら軽く位置調整 =====
-    if (normalized_ai_level() >= 10 &&
-    style() != SBR2AIStyle::Careful &&
-    !will_be_dangerous_soon(x, y, frame)) {
-        i8 enemy_x = simulator_.board().enemy_x();
-        i8 enemy_y = simulator_.board().enemy_y();
+    last_bomb_frame_ = frame;
+    return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+   }
+  }
 
-        int dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
+  // 高レベルTrickyだけ、最後にもう一度 trap を見る
+  if (tricky_trap_second_chance && level_allows_trap()) {
+   if (is_trap_possible(x, y, frame)) {
+    last_bomb_frame_ = frame;
+    return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+   }
+  }
+ }
 
-        if (dist >= 4) {
-            if (settings_.style == SBR2AIStyle::Aggressive) {
-                return move_toward_enemy(x, y, frame);
-            }
+ // ===== 人間っぽい動き：安全なら軽く位置調整 =====
+ if (normalized_ai_level() >= 10 &&
+     style() != SBR2AIStyle::Careful &&
+     !will_be_dangerous_soon(x, y, frame)) {
+  i8 enemy_x = simulator_.board().enemy_x();
+  i8 enemy_y = simulator_.board().enemy_y();
+  int dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
 
-            if (settings_.style == SBR2AIStyle::Tricky) {
-                if (enemy_x != x && enemy_y != y) {
-                    return move_toward_enemy(x, y, frame);
-                }
-            }
+  if (dist >= 4) {
+   if (settings_.style == SBR2AIStyle::Aggressive) {
+    return remember_reposition_action(
+     move_toward_enemy(x, y, frame));
+   }
 
-            if (settings_.style == SBR2AIStyle::Careful) {
-                if (dist >= 6) {
-                    return move_toward_enemy(x, y, frame);
-                }
-            }
-        }
+   if (settings_.style == SBR2AIStyle::Tricky) {
+    if (enemy_x != x && enemy_y != y) {
+     return remember_reposition_action(
+      move_toward_enemy(x, y, frame));
     }
+   }
 
-    return SBR2Action::WAIT;
+   if (settings_.style == SBR2AIStyle::Careful) {
+    if (dist >= 6) {
+     return remember_reposition_action(
+      move_toward_enemy(x, y, frame));
+    }
+   }
+  }
+ }
+
+ return reset_reposition_state_and_return(SBR2Action::WAIT);
 }
 
 bool SBR2AIBrain::can_step_to(i8 x, i8 y) const
@@ -600,60 +639,64 @@ SBR2Action SBR2AIBrain::fallback_safe_step(i8 self_x, i8 self_y) const
 
 SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
 {
-    i8 enemy_x = simulator_.board().enemy_x();
-    i8 enemy_y = simulator_.board().enemy_y();
+ (void)frame;
 
-    int dx = enemy_x - self_x;
-    int dy = enemy_y - self_y;
+ i8 enemy_x = simulator_.board().enemy_x();
+ i8 enemy_y = simulator_.board().enemy_y();
 
-    SBR2Action first = SBR2Action::WAIT;
-    SBR2Action second = SBR2Action::WAIT;
+ int dx = enemy_x - self_x;
+ int dy = enemy_y - self_y;
 
-    if (std::abs(dx) > std::abs(dy))
-    {
-        if (dx > 0) first = SBR2Action::RIGHT;
-        else if (dx < 0) first = SBR2Action::LEFT;
+ SBR2Action first = SBR2Action::WAIT;
+ SBR2Action second = SBR2Action::WAIT;
 
-        if (dy > 0) second = SBR2Action::DOWN;
-        else if (dy < 0) second = SBR2Action::UP;
-    }
-    else
-    {
-        if (dy > 0) first = SBR2Action::DOWN;
-        else if (dy < 0) first = SBR2Action::UP;
+ if (std::abs(dx) > std::abs(dy)) {
+  if (dx > 0) first = SBR2Action::RIGHT;
+  else if (dx < 0) first = SBR2Action::LEFT;
 
-        if (dx > 0) second = SBR2Action::RIGHT;
-        else if (dx < 0) second = SBR2Action::LEFT;
-    }
+  if (dy > 0) second = SBR2Action::DOWN;
+  else if (dy < 0) second = SBR2Action::UP;
+ } else {
+  if (dy > 0) first = SBR2Action::DOWN;
+  else if (dy < 0) first = SBR2Action::UP;
 
-    auto can_use_action = [&](SBR2Action action) -> bool
-    {
-        switch (action)
-        {
-        case SBR2Action::UP:
-            return can_step_to(self_x, self_y - 1);
-        case SBR2Action::DOWN:
-            return can_step_to(self_x, self_y + 1);
-        case SBR2Action::LEFT:
-            return can_step_to(self_x - 1, self_y);
-        case SBR2Action::RIGHT:
-            return can_step_to(self_x + 1, self_y);
-        default:
-            return false;
-        }
-    };
+  if (dx > 0) second = SBR2Action::RIGHT;
+  else if (dx < 0) second = SBR2Action::LEFT;
+ }
 
-    if (can_use_action(first))
-    {
-        return first;
-    }
+ auto can_use_action = [&](SBR2Action action) -> bool {
+  switch (action) {
+  case SBR2Action::UP:
+   return can_step_to(self_x, self_y - 1);
+  case SBR2Action::DOWN:
+   return can_step_to(self_x, self_y + 1);
+  case SBR2Action::LEFT:
+   return can_step_to(self_x - 1, self_y);
+  case SBR2Action::RIGHT:
+   return can_step_to(self_x + 1, self_y);
+  default:
+   return false;
+  }
+ };
 
-    if (can_use_action(second))
-    {
-        return second;
-    }
+ bool avoid_same_direction_too_much =
+  is_move_action(first) &&
+  first == last_reposition_action_ &&
+  same_direction_reposition_count_ >= same_direction_reposition_limit();
 
-    return fallback_safe_step(self_x, self_y);
+ if (avoid_same_direction_too_much && can_use_action(second)) {
+  return second;
+ }
+
+ if (can_use_action(first)) {
+  return first;
+ }
+
+ if (can_use_action(second)) {
+  return second;
+ }
+
+ return fallback_safe_step(self_x, self_y);
 }
 
 bool SBR2AIBrain::can_place_bomb_and_escape_strict(i8 x, i8 y, i32 frame) const

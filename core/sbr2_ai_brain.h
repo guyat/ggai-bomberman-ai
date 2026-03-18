@@ -47,6 +47,13 @@ private:
     SBR2AIBrainSettings settings_;
 
     mutable int last_bomb_frame_ = -1000;
+    mutable SBR2Action last_reposition_action_ = SBR2Action::WAIT;
+    mutable int same_direction_reposition_count_ = 0;
+
+    bool is_move_action(SBR2Action action) const;
+    int same_direction_reposition_limit() const;
+    SBR2Action remember_reposition_action(SBR2Action action) const;
+    SBR2Action reset_reposition_state_and_return(SBR2Action action) const;
 
     int normalized_ai_level() const;
     int bomb_cooldown_frames() const;
