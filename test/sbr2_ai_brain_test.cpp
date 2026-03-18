@@ -7,14 +7,22 @@
 
 std::string action_to_string(SBR2Action action)
 {
-    switch (action) {
-    case SBR2Action::WAIT:       return "WAIT";
-    case SBR2Action::UP:         return "UP";
-    case SBR2Action::DOWN:       return "DOWN";
-    case SBR2Action::LEFT:       return "LEFT";
-    case SBR2Action::RIGHT:      return "RIGHT";
-    case SBR2Action::PLACE_BOMB: return "PLACE_BOMB";
-    default:                     return "UNKNOWN";
+    switch (action)
+    {
+    case SBR2Action::WAIT:
+        return "WAIT";
+    case SBR2Action::UP:
+        return "UP";
+    case SBR2Action::DOWN:
+        return "DOWN";
+    case SBR2Action::LEFT:
+        return "LEFT";
+    case SBR2Action::RIGHT:
+        return "RIGHT";
+    case SBR2Action::PLACE_BOMB:
+        return "PLACE_BOMB";
+    default:
+        return "UNKNOWN";
     }
 }
 
@@ -31,7 +39,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(1, 0);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -51,7 +59,7 @@ int main()
         simulator.add_bomb(11, 10, 0);
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(1, 0);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -63,9 +71,12 @@ int main()
         std::cout << "CASE 2: dangerous soon / should escape\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::WAIT) {
+        if (action == SBR2Action::WAIT)
+        {
             std::cout << "ERROR: got WAIT, but escape was expected.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "OK: non-WAIT action returned.\n";
         }
     }
@@ -77,7 +88,7 @@ int main()
         simulator.add_bomb(11, 10, 0);
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(1, 0);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -91,7 +102,8 @@ int main()
         std::cout << "CASE 3: compare Pathfinder and Brain\n";
         std::cout << "escape found = " << (found ? "TRUE" : "FALSE") << "\n";
 
-        if (found && result.found) {
+        if (found && result.found)
+        {
             std::cout << "pathfinder first_action = "
                       << action_to_string(result.first_action) << "\n";
             std::cout << "pathfinder target = ("
@@ -108,7 +120,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(1, 0);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -120,9 +132,12 @@ int main()
         std::cout << "CASE 4: safe start / may reposition instead of WAIT\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::WAIT) {
+        if (action == SBR2Action::WAIT)
+        {
             std::cout << "OK: WAIT returned.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "OK: repositioning is allowed in current AI.\n";
         }
     }
@@ -133,7 +148,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(8, 10);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -145,9 +160,12 @@ int main()
         std::cout << "CASE 5: straight-line kill / should PLACE_BOMB\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::PLACE_BOMB) {
+        if (action == SBR2Action::PLACE_BOMB)
+        {
             std::cout << "OK: PLACE_BOMB returned.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "ERROR: expected PLACE_BOMB.\n";
         }
     }
@@ -158,7 +176,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(11, 6);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -170,9 +188,12 @@ int main()
         std::cout << "CASE 6: blocked straight-line / should not PLACE_BOMB\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::PLACE_BOMB) {
+        if (action == SBR2Action::PLACE_BOMB)
+        {
             std::cout << "ERROR: expected non-PLACE_BOMB.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "OK: did not place bomb because hard block blocks the line.\n";
         }
     }
@@ -183,7 +204,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(9, 9);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -195,9 +216,12 @@ int main()
         std::cout << "CASE 7: one-step enemy prediction / level 20 may PLACE_BOMB\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::PLACE_BOMB) {
+        if (action == SBR2Action::PLACE_BOMB)
+        {
             std::cout << "OK: PLACE_BOMB returned by one-step prediction.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "NOTE: did not place bomb (escape may be unsafe).\n";
         }
     }
@@ -208,7 +232,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(1, 1);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -233,7 +257,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(8, 10);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -249,9 +273,12 @@ int main()
         std::cout << "brain level = " << brain.ai_level() << "\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::WAIT) {
+        if (action == SBR2Action::WAIT)
+        {
             std::cout << "OK: low level did not use straight-line kill.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "ERROR: expected WAIT for level 5.\n";
         }
     }
@@ -263,7 +290,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(8, 10);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -279,9 +306,12 @@ int main()
         std::cout << "brain level = " << brain.ai_level() << "\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::PLACE_BOMB) {
+        if (action == SBR2Action::PLACE_BOMB)
+        {
             std::cout << "OK: high level used straight-line kill.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "ERROR: expected PLACE_BOMB for level 20.\n";
         }
     }
@@ -293,7 +323,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(8, 10);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -321,7 +351,7 @@ int main()
         simulator.add_bomb(11, 10, 0);
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(8, 10);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -338,9 +368,12 @@ int main()
         std::cout << "CASE 12: Careful / should avoid reckless bomb placement\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::PLACE_BOMB) {
+        if (action == SBR2Action::PLACE_BOMB)
+        {
             std::cout << "ERROR: Careful should avoid reckless bomb placement here.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "OK: Careful avoided reckless bomb placement.\n";
         }
     }
@@ -352,7 +385,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(5, 5);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -384,7 +417,7 @@ int main()
 
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
 
         i8 self_x = 6;
         i8 self_y = 5;
@@ -405,9 +438,12 @@ int main()
         std::cout << "CASE 14: Tricky trap test / should PLACE_BOMB if trap works\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::PLACE_BOMB) {
+        if (action == SBR2Action::PLACE_BOMB)
+        {
             std::cout << "OK: Tricky placed bomb for trap.\n";
-        } else {
+        }
+        else
+        {
             std::cout << "NOTE: Tricky did not use trap in this setup.\n";
         }
     }
@@ -420,7 +456,7 @@ int main()
         simulator.clear();
         simulator.simulate();
 
-        SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
         board.set_enemy_position(1, 0);
 
         SBR2PathFinder pathfinder(board, simulator);
@@ -449,12 +485,61 @@ int main()
             a2 == SBR2Action::LEFT &&
             a3 == SBR2Action::LEFT &&
             a4 == SBR2Action::LEFT &&
-            a5 == SBR2Action::UP) {
-        std::cout << "OK: same-direction rush was softened on repeated calls.\n";
-        } else {
-        std::cout << "NOTE: result differed from expected pattern. Check streak control.\n";
+            a5 == SBR2Action::UP)
+        {
+            std::cout << "OK: same-direction rush was softened on repeated calls.\n";
+        }
+        else
+        {
+            std::cout << "NOTE: result differed from expected pattern. Check streak control.\n";
         }
     }
+
+ // CASE 16
+ // 再配置方向を短時間だけ維持して、壁際ふらつきを減らせるか確認
+ {
+  SBR2Simulator simulator;
+
+  simulator.clear();
+  simulator.simulate();
+
+  SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+
+  SBR2PathFinder pathfinder(board, simulator);
+
+  SBR2AIBrainSettings settings;
+  settings.ai_level = 10;
+  settings.style = SBR2AIStyle::Aggressive;
+
+  SBR2AIBrain brain(simulator, pathfinder, settings);
+
+  // 1回目は LEFT 優先
+  board.set_enemy_position(7, 8);
+  SBR2Action a1 = brain.decide_reposition_action_for_test(12, 10, 200);
+
+  // 2回目は本来 UP 優先に変わる配置
+  // ただし hold が効いていれば LEFT 維持
+  board.set_enemy_position(11, 5);
+  SBR2Action a2 = brain.decide_reposition_action_for_test(12, 10, 201);
+
+  // 3回目は hold が切れて UP に変わる想定
+  board.set_enemy_position(11, 5);
+  SBR2Action a3 = brain.decide_reposition_action_for_test(12, 10, 202);
+
+  print_separator();
+  std::cout << "CASE 16: short hold for reposition direction\n";
+  std::cout << "a1 = " << action_to_string(a1) << "\n";
+  std::cout << "a2 = " << action_to_string(a2) << "\n";
+  std::cout << "a3 = " << action_to_string(a3) << "\n";
+
+  if (a1 == SBR2Action::LEFT &&
+      a2 == SBR2Action::LEFT &&
+      a3 == SBR2Action::UP) {
+   std::cout << "OK: reposition direction was held briefly, then changed naturally.\n";
+  } else {
+   std::cout << "NOTE: result differed from expected hold pattern. Check hold logic.\n";
+  }
+ }
 
     print_separator();
     return 0;

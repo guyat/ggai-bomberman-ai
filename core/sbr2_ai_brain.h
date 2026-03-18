@@ -38,6 +38,7 @@ public:
     );
 
     SBR2Action decide_next_action(i8 x, i8 y, i32 frame) const;
+    SBR2Action decide_reposition_action_for_test(i8 x, i8 y, i32 frame) const;
 
     int ai_level() const;
 
@@ -49,11 +50,16 @@ private:
     mutable int last_bomb_frame_ = -1000;
     mutable SBR2Action last_reposition_action_ = SBR2Action::WAIT;
     mutable int same_direction_reposition_count_ = 0;
+    mutable SBR2Action held_reposition_action_ = SBR2Action::WAIT;
+    mutable int held_reposition_until_frame_ = -1;
 
     bool is_move_action(SBR2Action action) const;
     int same_direction_reposition_limit() const;
     SBR2Action remember_reposition_action(SBR2Action action) const;
     SBR2Action reset_reposition_state_and_return(SBR2Action action) const;
+
+    int reposition_hold_extra_frames() const;
+    SBR2Action apply_reposition_hold(SBR2Action action, i32 frame) const;
 
     int normalized_ai_level() const;
     int bomb_cooldown_frames() const;
