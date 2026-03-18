@@ -544,6 +544,44 @@ int main()
         }
     }
 
+    // CASE 17
+    // 中央寄りでは再配置方向が壁際より早く変わるか確認
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 10;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        // 以前ビルドが通っていた形に戻す
+        // 中央寄りの位置 (6, 5) を使う
+        board.set_enemy_position(0, 5);
+        SBR2Action a1 = brain.decide_reposition_action_for_test(6, 5, 300);
+
+        board.set_enemy_position(5, 0);
+        SBR2Action a2 = brain.decide_reposition_action_for_test(6, 5, 301);
+
+        board.set_enemy_position(5, 0);
+        SBR2Action a3 = brain.decide_reposition_action_for_test(6, 5, 302);
+
+        print_separator();
+        std::cout << "CASE 17: center-side reposition should change faster\n";
+        std::cout << "a1 = " << action_to_string(a1) << "\n";
+        std::cout << "a2 = " << action_to_string(a2) << "\n";
+        std::cout << "a3 = " << action_to_string(a3) << "\n";
+
+        std::cout << "NOTE: center-side behavior depends on actual movable directions on this tile.\n";
+    }
+
     print_separator();
     return 0;
 }
