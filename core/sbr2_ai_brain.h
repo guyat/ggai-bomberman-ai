@@ -27,15 +27,13 @@ class SBR2AIBrain
 {
 public:
     SBR2AIBrain(
-        const SBR2Simulator& simulator,
-        const SBR2PathFinder& pathfinder
-    );
+        const SBR2Simulator &simulator,
+        const SBR2PathFinder &pathfinder);
 
     SBR2AIBrain(
-        const SBR2Simulator& simulator,
-        const SBR2PathFinder& pathfinder,
-        const SBR2AIBrainSettings& settings
-    );
+        const SBR2Simulator &simulator,
+        const SBR2PathFinder &pathfinder,
+        const SBR2AIBrainSettings &settings);
 
     SBR2Action decide_next_action(i8 x, i8 y, i32 frame) const;
     SBR2Action decide_reposition_action_for_test(i8 x, i8 y, i32 frame) const;
@@ -43,8 +41,8 @@ public:
     int ai_level() const;
 
 private:
-    const SBR2Simulator& simulator_;
-    const SBR2PathFinder& pathfinder_;
+    const SBR2Simulator &simulator_;
+    const SBR2PathFinder &pathfinder_;
     SBR2AIBrainSettings settings_;
 
     mutable int last_bomb_frame_ = -1000;
@@ -58,8 +56,9 @@ private:
     SBR2Action remember_reposition_action(SBR2Action action) const;
     SBR2Action reset_reposition_state_and_return(SBR2Action action) const;
 
-    int reposition_hold_extra_frames() const;
-    SBR2Action apply_reposition_hold(SBR2Action action, i32 frame) const;
+    int reposition_hold_extra_frames(i8 x, i8 y) const;
+    SBR2Action apply_reposition_hold(
+        SBR2Action action, i8 x, i8 y, i32 frame) const;
 
     int normalized_ai_level() const;
     int bomb_cooldown_frames() const;
@@ -82,13 +81,11 @@ private:
     bool can_hit_enemy_now_or_after_one_step(
         i8 x,
         i8 y,
-        bool allow_one_step_prediction
-    ) const;
+        bool allow_one_step_prediction) const;
 
     bool is_trap_possible(i8 self_x, i8 self_y, i32 frame) const;
     int count_enemy_survivable_cells_after_bomb(i8 self_x, i8 self_y, i32 frame) const;
     SBR2Action move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const;
     bool can_step_to(i8 x, i8 y) const;
     SBR2Action fallback_safe_step(i8 self_x, i8 self_y) const;
-
 };

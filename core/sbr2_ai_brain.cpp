@@ -196,12 +196,37 @@ SBR2Action SBR2AIBrain::reset_reposition_state_and_return(SBR2Action action) con
     return action;
 }
 
-int SBR2AIBrain::reposition_hold_extra_frames() const
+int SBR2AIBrain::reposition_hold_extra_frames(i8 x, i8 y) const
 {
+    const int min_x = 0;
+    const int max_x = 12;
+    const int min_y = 0;
+    const int max_y = 10;
+
+    int dist_left = x - min_x;
+    int dist_right = max_x - x;
+    int dist_up = y - min_y;
+    int dist_down = max_y - y;
+
+    int min_dist = std::min(
+        std::min(dist_left, dist_right),
+        std::min(dist_up, dist_down));
+
+    if (min_dist <= 1)
+    {
+        return 3;
+    }
+
+    if (min_dist <= 2)
+    {
+        return 2;
+    }
+
     return 1;
 }
 
-SBR2Action SBR2AIBrain::apply_reposition_hold(SBR2Action action, i32 frame) const
+SBR2Action SBR2AIBrain::apply_reposition_hold(
+    SBR2Action action, i8 x, i8 y, i32 frame) const
 {
     if (!is_move_action(action))
     {
@@ -210,11 +235,19 @@ SBR2Action SBR2AIBrain::apply_reposition_hold(SBR2Action action, i32 frame) cons
         return action;
     }
 
-    // 新しく方向が変わった瞬間だけ、次の1回分だけ維持する
-    if (action != last_reposition_action_)
+    // すでに保持中なら、その期限内は維持
+    if (frame < held_reposition_until_frame_ &&
+        is_move_action(held_reposition_action_))
+    {
+        return held_reposition_action_;
+    }
+
+    // 新しく方向が変わったときだけ保持開始
+    if (action != held_reposition_action_)
     {
         held_reposition_action_ = action;
-        held_reposition_until_frame_ = frame + reposition_hold_extra_frames();
+        held_reposition_until_frame_ =
+            frame + reposition_hold_extra_frames(x, y);
     }
 
     return action;
@@ -648,7 +681,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             if (settings_.style == SBR2AIStyle::Aggressive)
             {
                 return remember_reposition_action(
-                    apply_reposition_hold(move_toward_enemy(x, y, frame), frame));
+                    apply_reposition_hold(move_toward_enemy(x, y, frame), x, y, frame));
             }
 
             if (settings_.style == SBR2AIStyle::Tricky)
@@ -656,7 +689,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                 if (enemy_x != x && enemy_y != y)
                 {
                     return remember_reposition_action(
-                        apply_reposition_hold(move_toward_enemy(x, y, frame), frame));
+                        apply_reposition_hold(move_toward_enemy(x, y, frame), x, y, frame));
                 }
             }
 
@@ -665,7 +698,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                 if (dist >= 6)
                 {
                     return remember_reposition_action(
-                        apply_reposition_hold(move_toward_enemy(x, y, frame), frame));
+                        apply_reposition_hold(move_toward_enemy(x, y, frame), x, y, frame));
                 }
             }
         }
@@ -678,7 +711,7 @@ SBR2Action SBR2AIBrain::decide_reposition_action_for_test(
     i8 x, i8 y, i32 frame) const
 {
     return remember_reposition_action(
-        apply_reposition_hold(move_toward_enemy(x, y, frame), frame));
+        apply_reposition_hold(move_toward_enemy(x, y, frame), x, y, frame));
 }
 
 bool SBR2AIBrain::can_step_to(i8 x, i8 y) const
@@ -767,12 +800,12 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
 
     // 壁際や境界で毎フレーム方針が揺れすぎないよう、
     // 直前に決めた再配置方向を短時間だけ維持する
-    if (frame <= held_reposition_until_frame_ &&
-        is_move_action(held_reposition_action_) &&
-        can_use_action(held_reposition_action_))
-    {
-        return held_reposition_action_;
-    }
+    // if (frame <= held_reposition_until_frame_ &&
+    //     is_move_action(held_reposition_action_) &&
+    //     can_use_action(held_reposition_action_))
+    // {
+    //     return held_reposition_action_;
+    // }
 
     bool avoid_same_direction_too_much =
         is_move_action(first) &&

@@ -495,51 +495,54 @@ int main()
         }
     }
 
- // CASE 16
- // 再配置方向を短時間だけ維持して、壁際ふらつきを減らせるか確認
- {
-  SBR2Simulator simulator;
+    // CASE 16
+    // 再配置方向を短時間だけ維持して、壁際ふらつきを減らせるか確認
+    {
+        SBR2Simulator simulator;
 
-  simulator.clear();
-  simulator.simulate();
+        simulator.clear();
+        simulator.simulate();
 
-  SBR2Board& board = const_cast<SBR2Board&>(simulator.board());
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
 
-  SBR2PathFinder pathfinder(board, simulator);
+        SBR2PathFinder pathfinder(board, simulator);
 
-  SBR2AIBrainSettings settings;
-  settings.ai_level = 10;
-  settings.style = SBR2AIStyle::Aggressive;
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 10;
+        settings.style = SBR2AIStyle::Aggressive;
 
-  SBR2AIBrain brain(simulator, pathfinder, settings);
+        SBR2AIBrain brain(simulator, pathfinder, settings);
 
-  // 1回目は LEFT 優先
-  board.set_enemy_position(7, 8);
-  SBR2Action a1 = brain.decide_reposition_action_for_test(12, 10, 200);
+        // 1回目は LEFT 優先
+        board.set_enemy_position(7, 8);
+        SBR2Action a1 = brain.decide_reposition_action_for_test(12, 10, 200);
 
-  // 2回目は本来 UP 優先に変わる配置
-  // ただし hold が効いていれば LEFT 維持
-  board.set_enemy_position(11, 5);
-  SBR2Action a2 = brain.decide_reposition_action_for_test(12, 10, 201);
+        // 2回目は本来 UP 優先に変わる配置
+        // ただし hold が効いていれば LEFT 維持
+        board.set_enemy_position(11, 5);
+        SBR2Action a2 = brain.decide_reposition_action_for_test(12, 10, 201);
 
-  // 3回目は hold が切れて UP に変わる想定
-  board.set_enemy_position(11, 5);
-  SBR2Action a3 = brain.decide_reposition_action_for_test(12, 10, 202);
+        // 3回目は hold が切れて UP に変わる想定
+        board.set_enemy_position(11, 5);
+        SBR2Action a3 = brain.decide_reposition_action_for_test(12, 10, 202);
 
-  print_separator();
-  std::cout << "CASE 16: short hold for reposition direction\n";
-  std::cout << "a1 = " << action_to_string(a1) << "\n";
-  std::cout << "a2 = " << action_to_string(a2) << "\n";
-  std::cout << "a3 = " << action_to_string(a3) << "\n";
+        print_separator();
+        std::cout << "CASE 16: short hold for reposition direction\n";
+        std::cout << "a1 = " << action_to_string(a1) << "\n";
+        std::cout << "a2 = " << action_to_string(a2) << "\n";
+        std::cout << "a3 = " << action_to_string(a3) << "\n";
 
-  if (a1 == SBR2Action::LEFT &&
-      a2 == SBR2Action::LEFT &&
-      a3 == SBR2Action::UP) {
-   std::cout << "OK: reposition direction was held briefly, then changed naturally.\n";
-  } else {
-   std::cout << "NOTE: result differed from expected hold pattern. Check hold logic.\n";
-  }
- }
+        if (a1 == SBR2Action::LEFT &&
+            a2 == SBR2Action::LEFT &&
+            a3 == SBR2Action::LEFT)
+        {
+            std::cout << "OK: wall-side reposition hold stayed longer as expected.\n";
+        }
+        else
+        {
+            std::cout << "NOTE: result differed from expected wall-side hold pattern.\n";
+        }
+    }
 
     print_separator();
     return 0;
