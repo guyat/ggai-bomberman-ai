@@ -31,6 +31,18 @@ void print_separator()
     std::cout << "========================================\n";
 }
 
+void print_case_summary(const std::string &case_name, bool ok, const std::string &detail = "")
+{
+    if (ok)
+    {
+        std::cout << case_name << ": OK\n";
+    }
+    else
+    {
+        std::cout << case_name << ": " << detail << "\n";
+    }
+}
+
 int main()
 {
     // CASE 1
@@ -399,8 +411,19 @@ int main()
         SBR2Action action = brain.decide_next_action(4, 5, 100);
 
         print_separator();
-        std::cout << "CASE 13: Tricky / trap-oriented\n";
-        std::cout << "action = " << action_to_string(action) << "\n";
+
+        bool ok13 = (action == SBR2Action::PLACE_BOMB);
+
+        if (ok13)
+        {
+            print_case_summary("CASE 13", true);
+        }
+        else
+        {
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 13", false, detail);
+        }
     }
 
     // CASE 14
@@ -435,16 +458,18 @@ int main()
         SBR2Action action = brain.decide_next_action(self_x, self_y, 100);
 
         print_separator();
-        std::cout << "CASE 14: Tricky trap test / should PLACE_BOMB if trap works\n";
-        std::cout << "action = " << action_to_string(action) << "\n";
 
-        if (action == SBR2Action::PLACE_BOMB)
+        bool ok14 = (action == SBR2Action::PLACE_BOMB);
+
+        if (ok14)
         {
-            std::cout << "OK: Tricky placed bomb for trap.\n";
+            print_case_summary("CASE 14", true);
         }
         else
         {
-            std::cout << "NOTE: Tricky did not use trap in this setup.\n";
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 14", false, detail);
         }
     }
 
@@ -474,24 +499,27 @@ int main()
         SBR2Action a5 = brain.decide_next_action(12, 10, 104);
 
         print_separator();
-        std::cout << "CASE 15: avoid too much same-direction reposition\n";
-        std::cout << "a1 = " << action_to_string(a1) << "\n";
-        std::cout << "a2 = " << action_to_string(a2) << "\n";
-        std::cout << "a3 = " << action_to_string(a3) << "\n";
-        std::cout << "a4 = " << action_to_string(a4) << "\n";
-        std::cout << "a5 = " << action_to_string(a5) << "\n";
 
-        if (a1 == SBR2Action::LEFT &&
-            a2 == SBR2Action::LEFT &&
-            a3 == SBR2Action::LEFT &&
-            a4 == SBR2Action::LEFT &&
-            a5 == SBR2Action::UP)
+        bool ok15 =
+            (a1 == SBR2Action::LEFT &&
+             a2 == SBR2Action::LEFT &&
+             a3 == SBR2Action::LEFT &&
+             a4 == SBR2Action::LEFT &&
+             a5 == SBR2Action::UP);
+
+        if (ok15)
         {
-            std::cout << "OK: same-direction rush was softened on repeated calls.\n";
+            print_case_summary("CASE 15", true);
         }
         else
         {
-            std::cout << "NOTE: result differed from expected pattern. Check streak control.\n";
+            std::string detail =
+                "NOTE a1=" + action_to_string(a1) +
+                " a2=" + action_to_string(a2) +
+                " a3=" + action_to_string(a3) +
+                " a4=" + action_to_string(a4) +
+                " a5=" + action_to_string(a5);
+            print_case_summary("CASE 15", false, detail);
         }
     }
 
@@ -527,20 +555,23 @@ int main()
         SBR2Action a3 = brain.decide_reposition_action_for_test(12, 10, 202);
 
         print_separator();
-        std::cout << "CASE 16: short hold for reposition direction\n";
-        std::cout << "a1 = " << action_to_string(a1) << "\n";
-        std::cout << "a2 = " << action_to_string(a2) << "\n";
-        std::cout << "a3 = " << action_to_string(a3) << "\n";
 
-        if (a1 == SBR2Action::LEFT &&
-            a2 == SBR2Action::LEFT &&
-            a3 == SBR2Action::LEFT)
+        bool ok16 =
+            (a1 == SBR2Action::LEFT &&
+             a2 == SBR2Action::LEFT &&
+             a3 == SBR2Action::LEFT);
+
+        if (ok16)
         {
-            std::cout << "OK: wall-side reposition hold stayed longer as expected.\n";
+            print_case_summary("CASE 16", true);
         }
         else
         {
-            std::cout << "NOTE: result differed from expected wall-side hold pattern.\n";
+            std::string detail =
+                "NOTE a1=" + action_to_string(a1) +
+                " a2=" + action_to_string(a2) +
+                " a3=" + action_to_string(a3);
+            print_case_summary("CASE 16", false, detail);
         }
     }
 
@@ -574,12 +605,7 @@ int main()
         SBR2Action a3 = brain.decide_reposition_action_for_test(6, 5, 302);
 
         print_separator();
-        std::cout << "CASE 17: center-side reposition should change faster\n";
-        std::cout << "a1 = " << action_to_string(a1) << "\n";
-        std::cout << "a2 = " << action_to_string(a2) << "\n";
-        std::cout << "a3 = " << action_to_string(a3) << "\n";
-
-        std::cout << "NOTE: center-side behavior depends on actual movable directions on this tile.\n";
+        print_case_summary("CASE 17", false, "NOTE observation only");
     }
 
     print_separator();

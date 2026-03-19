@@ -713,6 +713,69 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             }
         }
 
+        // ===== 近距離ゴリ押し（対人強化） =====
+        if (style() == SBR2AIStyle::Aggressive ||
+            (style() == SBR2AIStyle::Tricky && normalized_ai_level() >= 18))
+        {
+            i8 enemy_x = simulator_.board().enemy_x();
+            i8 enemy_y = simulator_.board().enemy_y();
+
+            int enemy_dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
+
+            if (enemy_dist <= 2)
+            {
+                int pseudo_rand = (frame + x * 11 + y * 17) % 4;
+
+                // 75%は置く、25%はフェイント
+                if (pseudo_rand != 0)
+                {
+                    if (can_place_bomb_and_escape(x, y, frame))
+                    {
+                        last_bomb_frame_ = frame;
+                        return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                    }
+                }
+            }
+            // =========================
+            // 近距離詰ませチェック（確殺優先）
+            // =========================
+            {
+                i8 enemy_x = simulator_.board().enemy_x();
+                i8 enemy_y = simulator_.board().enemy_y();
+
+                int enemy_dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
+
+                if (enemy_dist == 1)
+                {
+                    int escape = 0;
+
+                    const int dx[4] = {1, -1, 0, 0};
+                    const int dy[4] = {0, 0, 1, -1};
+
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        int nx = enemy_x + dx[i];
+                        int ny = enemy_y + dy[i];
+
+                        if (can_step_to(nx, ny))
+                        {
+                            escape++;
+                        }
+                    }
+
+                    // 逃げ道1以下なら確殺扱い
+                    if (escape <= 1)
+                    {
+                        if (can_place_bomb_and_escape(x, y, frame))
+                        {
+                            last_bomb_frame_ = frame;
+                            return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                        }
+                    }
+                }
+            }
+        }
+
         // 直線キル
         if (level_allows_straight_kill())
         {
@@ -937,6 +1000,11 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
     int dx = enemy_x - self_x;
     int dy = enemy_y - self_y;
 
+    bool can_left = can_step_to(enemy_x - 1, enemy_y);
+    bool can_right = can_step_to(enemy_x + 1, enemy_y);
+    bool can_up = can_step_to(enemy_x, enemy_y - 1);
+    bool can_down = can_step_to(enemy_x, enemy_y + 1);
+
     SBR2Action first = SBR2Action::WAIT;
     SBR2Action second = SBR2Action::WAIT;
 
@@ -967,6 +1035,24 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
             second = SBR2Action::RIGHT;
         else if (dx < 0)
             second = SBR2Action::LEFT;
+    }
+
+    // 横に逃げやすいなら横方向を優先
+    if ((can_left || can_right) && std::abs(dx) <= 3)
+    {
+        if (dx > 0)
+            first = SBR2Action::RIGHT;
+        else if (dx < 0)
+            first = SBR2Action::LEFT;
+    }
+
+    // 縦に逃げやすいなら縦方向を優先
+    if ((can_up || can_down) && std::abs(dy) <= 3)
+    {
+        if (dy > 0)
+            first = SBR2Action::DOWN;
+        else if (dy < 0)
+            first = SBR2Action::UP;
     }
 
     // 斜め + 近距離では、行/列を合わせる動きを少し優先する
@@ -1002,6 +1088,19 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
     // 敵が近いとき、たまに第2候補を優先して動きに揺れを出す
     // ただし一直線で詰められる形なら、揺れを抑えて素直に詰める
     bool aligned_straight = (dx == 0 || dy == 0);
+
+    // ===== 人間っぽい揺れ（疑似ランダム） =====
+    // 完全ランダムではなく frame を使って再現性を保つ
+    if (enemy_dist <= 5 && !aligned_straight)
+    {
+        int pseudo_rand = (frame + self_x * 7 + self_y * 13) % 5;
+
+        // 20%くらいの確率で方向を入れ替える
+        if (pseudo_rand == 0)
+        {
+            std::swap(first, second);
+        }
+    }
 
     if (enemy_dist <= 4 && !aligned_straight)
     {
