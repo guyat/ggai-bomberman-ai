@@ -708,6 +708,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
     if (frame - last_bomb_frame_ > bomb_cooldown_frames())
     {
         // 高レベルTrickyは trap を先に見る
+
         if (trap_first && level_allows_trap())
         {
             if (is_trap_possible(x, y, frame))
@@ -928,6 +929,11 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 
                 bool allow_straight_kill = (safe || allow_risky);
 
+                if (style() == SBR2AIStyle::Careful && enemy_dist >= 5)
+                {
+                    allow_straight_kill = false;
+                }
+
                 // Tricky は誘導トラップを優先しやすくするため、
                 // 近距離では直線キルを少しだけ抑える
                 if (style() == SBR2AIStyle::Tricky)
@@ -942,6 +948,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                     return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
                 }
             }
+
 
             // ===== 誘導ボム（簡易） =====
             if (style() == SBR2AIStyle::Tricky ||
@@ -1150,6 +1157,12 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             if (settings_.style == SBR2AIStyle::Tricky)
             {
                 if (enemy_x != x && enemy_y != y)
+                {
+                    return remember_reposition_action(
+                        apply_reposition_hold(move_toward_enemy(x, y, frame), x, y, frame));
+                }
+
+                if (dist >= 2)
                 {
                     return remember_reposition_action(
                         apply_reposition_hold(move_toward_enemy(x, y, frame), x, y, frame));

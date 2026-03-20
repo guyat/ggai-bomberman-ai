@@ -634,6 +634,321 @@ int main()
         print_case_summary("CASE 17", false, "NOTE observation only");
     }
 
+    // CASE 18
+    // Trickyで少し遠い一直線配置でも guided_trap_v2 が出すぎないか確認
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(5, 10);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Tricky;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+        print_separator();
+        std::cout << "CASE 18: Tricky / far but safe\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "BOMB_REASON: " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 18", false, "NOTE observation only");
+    }
+
+    // CASE 19
+    // Trickyで中距離一直線のときに guided_trap_v2 が出るか確認
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(5, 8);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Tricky;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+        print_separator();
+        std::cout << "CASE 19: Tricky / mid distance line\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "BOMB_REASON: " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 19", false, "NOTE observation only");
+    }
+
+    // CASE 20
+    // Trickyで斜め近距離のとき、guided_bomb 系が見えるか観測
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(6, 6);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Tricky;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+        print_separator();
+        std::cout << "CASE 20: Tricky / diagonal near\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "BOMB_REASON: " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 20", false, "NOTE observation only");
+    }
+
+    // CASE 21
+    // Trickyで斜め中距離のとき、WAITではなく移動寄りになるか観測
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(6, 7);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Tricky;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+        print_separator();
+        std::cout << "CASE 21: Tricky / diagonal mid\n";
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "BOMB_REASON: " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 21", false, "NOTE observation only");
+    }
+
+    // CASE 22
+    // 同一状況で Aggressive / Careful / Tricky の違いを見る
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(6, 6);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        std::cout << "========================================\n";
+        std::cout << "CASE 22: Style comparison (diagonal near)\n";
+
+        // Aggressive
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 22", false, "NOTE observation only");
+    }
+
+    // CASE 23
+    // 同一状況で Aggressive / Careful / Tricky の違いを見る（一直線）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(4, 8);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 23: Style comparison (straight line)\n";
+
+        // Aggressive
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 23", false, "NOTE observation only");
+    }
+
+    // CASE 24
+    // Careful が一直線でも少し遠いときに慎重になるか確認
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(4, 10);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 24: Careful check (straight far)\n";
+
+        // Aggressive
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 24", false, "NOTE observation only");
+    }
+
     print_separator();
     return 0;
 }
