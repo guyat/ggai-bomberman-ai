@@ -929,16 +929,22 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 
                 bool allow_straight_kill = (safe || allow_risky);
 
-                if (style() == SBR2AIStyle::Careful && enemy_dist >= 5)
+                if (style() == SBR2AIStyle::Careful && enemy_dist >= 4)
                 {
                     allow_straight_kill = false;
                 }
 
-                // Tricky は誘導トラップを優先しやすくするため、
-                // 近距離では直線キルを少しだけ抑える
+                // Tricky は誘導トラップや誘導ボムを優先しやすくするため、
+                // 斜め近距離では直線キルを少し抑える
                 if (style() == SBR2AIStyle::Tricky)
                 {
                     allow_straight_kill = safe;
+
+                    bool diagonal_relation = (enemy_x != x && enemy_y != y);
+                    if (diagonal_relation && enemy_dist <= 2)
+                    {
+                        allow_straight_kill = false;
+                    }
                 }
 
                 if (allow_straight_kill)
