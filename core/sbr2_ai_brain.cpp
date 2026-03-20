@@ -934,6 +934,12 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                     allow_straight_kill = false;
                 }
 
+                // Careful は近距離でも少しだけ攻めを抑える
+                if (style() == SBR2AIStyle::Careful && enemy_dist <= 2)
+                {
+                    allow_straight_kill = false;
+                }
+
                 // Tricky は誘導トラップや誘導ボムを優先しやすくするため、
                 // 斜め近距離では直線キルを少し抑える
                 if (style() == SBR2AIStyle::Tricky)

@@ -1686,6 +1686,212 @@ int main()
         print_case_summary("CASE 37", false, "NOTE observation only");
     }
 
+    // CASE 38
+    // style差 + level差の総合比較（斜め中距離）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(6, 7);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 38: Full comparison (diagonal mid)\n";
+
+        // Aggressive Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive Lv20] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful Lv20] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky Lv20] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 38", false, "NOTE observation only");
+    }
+
+    // CASE 39
+    // style差 + level差の総合比較（一直線）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(4, 8);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 39: Full comparison (straight line)\n";
+
+        // Aggressive Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive Lv20] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful Lv20] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky Lv20] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 39", false, "NOTE observation only");
+    }
+
     print_separator();
     return 0;
 }
