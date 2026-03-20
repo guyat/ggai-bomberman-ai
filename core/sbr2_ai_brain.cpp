@@ -873,19 +873,32 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                         escape2_danger = simulator_.is_danger(frame + 25, e2x, e2y);
                     }
 
-                    // 1マス目 or 2マス目が危険、または2マス目が塞がっていれば
+                    // 1マス目が塞がっている、または
+                    // 1マス目/2マス目が危険、または2マス目が塞がっていれば
                     // 誘導トラップ成立寄りとみなす
                     bool trap_like =
-                        escape1_ok &&
-                        (escape1_danger ||
-                         !escape2_ok ||
-                         escape2_danger);
+                        !escape1_ok ||
+                        escape1_danger ||
+                        !escape2_ok ||
+                        escape2_danger ||
+                        (escape1_ok && escape2_ok);
+
+                    std::cout
+                        << "DEBUG guided_trap_v2: "
+                        << "dist=" << dist
+                        << " escape1_ok=" << escape1_ok
+                        << " escape1_danger=" << escape1_danger
+                        << " escape2_ok=" << escape2_ok
+                        << " escape2_danger=" << escape2_danger
+                        << " trap_like=" << trap_like
+                        << std::endl;
 
                     if (trap_like)
                     {
                         if (can_place_bomb_and_escape(x, y, frame))
                         {
                             last_bomb_frame_ = frame;
+                            std::cout << "DEBUG: guided_trap_v2 triggered" << std::endl;
                             g_last_bomb_reason = "guided_trap_v2";
                             return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
                         }
