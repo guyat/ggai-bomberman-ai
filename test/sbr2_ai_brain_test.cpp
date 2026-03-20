@@ -5,6 +5,10 @@
 #include "../core/sbr2_pathfinder.h"
 #include "../core/sbr2_simulator.h"
 
+#include <string>
+
+extern std::string g_last_bomb_reason;
+
 std::string action_to_string(SBR2Action action)
 {
     switch (action)
@@ -194,10 +198,10 @@ int main()
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
-        SBR2Action action = brain.decide_next_action(11, 10, 300);
-
         print_separator();
         std::cout << "CASE 6: blocked straight-line / should not PLACE_BOMB\n";
+
+        SBR2Action action = brain.decide_next_action(11, 10, 300);
         std::cout << "action = " << action_to_string(action) << "\n";
 
         if (action == SBR2Action::PLACE_BOMB)
@@ -222,10 +226,10 @@ int main()
         SBR2PathFinder pathfinder(board, simulator);
         SBR2AIBrain brain(simulator, pathfinder);
 
-        SBR2Action action = brain.decide_next_action(8, 10, 350);
-
         print_separator();
         std::cout << "CASE 7: one-step enemy prediction / level 20 may PLACE_BOMB\n";
+
+        SBR2Action action = brain.decide_next_action(8, 10, 350);
         std::cout << "action = " << action_to_string(action) << "\n";
 
         if (action == SBR2Action::PLACE_BOMB)
@@ -278,10 +282,10 @@ int main()
         settings.ai_level = 5;
         SBR2AIBrain brain(simulator, pathfinder, settings);
 
-        SBR2Action action = brain.decide_next_action(12, 10, 200);
-
         print_separator();
         std::cout << "CASE 9: level 5 / should WAIT on straight-line setup\n";
+
+        SBR2Action action = brain.decide_next_action(12, 10, 200);
         std::cout << "brain level = " << brain.ai_level() << "\n";
         std::cout << "action = " << action_to_string(action) << "\n";
 
@@ -311,12 +315,17 @@ int main()
         settings.ai_level = 20;
         SBR2AIBrain brain(simulator, pathfinder, settings);
 
-        SBR2Action action = brain.decide_next_action(12, 10, 200);
-
         print_separator();
         std::cout << "CASE 10: level 20 / should PLACE_BOMB on straight-line setup\n";
+
+        SBR2Action action = brain.decide_next_action(12, 10, 200);
         std::cout << "brain level = " << brain.ai_level() << "\n";
         std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "BOMB_REASON: " << g_last_bomb_reason << "\n";
+        }
 
         if (action == SBR2Action::PLACE_BOMB)
         {
@@ -346,11 +355,16 @@ int main()
 
         SBR2AIBrain brain(simulator, pathfinder, settings);
 
-        SBR2Action action = brain.decide_next_action(12, 10, 200);
-
         print_separator();
         std::cout << "CASE 11: Aggressive / should PLACE_BOMB\n";
+
+        SBR2Action action = brain.decide_next_action(12, 10, 200);
+
         std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "BOMB_REASON: " << g_last_bomb_reason << "\n";
+        }
     }
 
     // CASE 12
@@ -374,10 +388,11 @@ int main()
 
         SBR2AIBrain brain(simulator, pathfinder, settings);
 
-        SBR2Action action = brain.decide_next_action(12, 10, 138);
-
         print_separator();
         std::cout << "CASE 12: Careful / should avoid reckless bomb placement\n";
+
+        SBR2Action action = brain.decide_next_action(12, 10, 138);
+
         std::cout << "action = " << action_to_string(action) << "\n";
 
         if (action == SBR2Action::PLACE_BOMB)
@@ -408,11 +423,16 @@ int main()
 
         SBR2AIBrain brain(simulator, pathfinder, settings);
 
-        SBR2Action action = brain.decide_next_action(4, 5, 100);
-
         print_separator();
-
+        std::cout << "CASE 13: Tricky / trap-oriented\n";
+        SBR2Action action = brain.decide_next_action(4, 5, 100);
+        std::cout << "action = " << action_to_string(action) << "\n";
         bool ok13 = (action == SBR2Action::PLACE_BOMB);
+
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "BOMB_REASON: " << g_last_bomb_reason << "\n";
+        }
 
         if (ok13)
         {
@@ -455,9 +475,15 @@ int main()
 
         SBR2AIBrain brain(simulator, pathfinder, settings);
 
-        SBR2Action action = brain.decide_next_action(self_x, self_y, 100);
-
         print_separator();
+        std::cout << "CASE 14: Tricky trap test / should PLACE_BOMB if trap works\n";
+        SBR2Action action = brain.decide_next_action(self_x, self_y, 100);
+        std::cout << "action = " << action_to_string(action) << "\n";
+
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "BOMB_REASON: " << g_last_bomb_reason << "\n";
+        }
 
         bool ok14 = (action == SBR2Action::PLACE_BOMB);
 

@@ -3,6 +3,9 @@
 #include <array>
 #include <cmath>
 #include <queue>
+#include <iostream>
+#include <string>
+std::string g_last_bomb_reason;
 
 SBR2AIBrain::SBR2AIBrain(
     const SBR2Simulator &simulator,
@@ -678,6 +681,7 @@ bool SBR2AIBrain::is_trap_possible(i8 self_x, i8 self_y, i32 frame) const
 
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
+    g_last_bomb_reason.clear();
     SBR2EscapeResult result{};
     bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);
 
@@ -709,6 +713,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             if (is_trap_possible(x, y, frame))
             {
                 last_bomb_frame_ = frame;
+                g_last_bomb_reason = "trap_first";
                 return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
             }
         }
@@ -724,18 +729,27 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 
             if (enemy_dist <= 2)
             {
-                int pseudo_rand = (frame + x * 11 + y * 17) % 4;
-
-                // 75%は置く、25%はフェイント
-                if (pseudo_rand != 0)
+                // トラップ系を優先させるため条件を少し絞る
+                if (enemy_dist == 1)
                 {
-                    if (can_place_bomb_and_escape(x, y, frame))
+                    // Trickyは近距離ゴリ押しを使わず、後段のtrap系へ流す
+                    if (style() != SBR2AIStyle::Tricky)
                     {
-                        last_bomb_frame_ = frame;
-                        return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                        int pseudo_rand = (frame + x * 11 + y * 17) % 4;
+
+                        if (pseudo_rand != 0)
+                        {
+                            if (can_place_bomb_and_escape(x, y, frame))
+                            {
+                                last_bomb_frame_ = frame;
+                                g_last_bomb_reason = "close_range_pressure";
+                                return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                            }
+                        }
                     }
                 }
             }
+
             // =========================
             // 近距離詰ませチェック（確殺優先）
             // =========================
@@ -769,6 +783,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                         if (can_place_bomb_and_escape(x, y, frame))
                         {
                             last_bomb_frame_ = frame;
+                            g_last_bomb_reason = "close_range_checkmate";
                             return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
                         }
                     }
@@ -776,13 +791,123 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             }
         }
 
-        // 直線キル
+        // ===== 完全詰み判定（Tricky最優先） =====
+        if (style() == SBR2AIStyle::Tricky)
+        {
+            i8 ex = simulator_.board().enemy_x();
+            i8 ey = simulator_.board().enemy_y();
+
+            int safe_count = 0;
+
+            const int dx[5] = {0, 1, -1, 0, 0};
+            const int dy[5] = {0, 0, 0, 1, -1};
+
+            for (int i = 0; i < 5; ++i)
+            {
+                i8 nx = ex + dx[i];
+                i8 ny = ey + dy[i];
+
+                if (!can_step_to(nx, ny))
+                    continue;
+
+                // そのマスが安全か軽くチェック
+                if (!simulator_.is_danger(frame + 20, nx, ny))
+                {
+                    safe_count++;
+                }
+            }
+
+            // 逃げ道がない＝確殺
+            if (safe_count == 0)
+            {
+                if (can_place_bomb_and_escape(x, y, frame))
+                {
+                    last_bomb_frame_ = frame;
+                    g_last_bomb_reason = "checkmate";
+                    return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                }
+            }
+        }
+
+        // ===== 誘導トラップ（Tricky専用） =====
+        // ===== 誘導トラップ（Tricky専用・強化版） =====
+        if (style() == SBR2AIStyle::Tricky)
+        {
+            i8 ex = simulator_.board().enemy_x();
+            i8 ey = simulator_.board().enemy_y();
+
+            int dx = ex - x;
+            int dy = ey - y;
+
+            // 同じ行または列
+            if (dx == 0 || dy == 0)
+            {
+                int dist = std::abs(dx) + std::abs(dy);
+
+                if (dist >= 2 && dist <= 6)
+                {
+                    // 逃げ方向（1マス目）
+                    int dir_x = (dx != 0) ? (dx > 0 ? 1 : -1) : 0;
+                    int dir_y = (dy != 0) ? (dy > 0 ? 1 : -1) : 0;
+
+                    i8 e1x = ex + dir_x;
+                    i8 e1y = ey + dir_y;
+
+                    // 2マス目
+                    i8 e2x = e1x + dir_x;
+                    i8 e2y = e1y + dir_y;
+
+                    bool escape1_ok = can_step_to(e1x, e1y);
+                    bool escape2_ok = can_step_to(e2x, e2y);
+
+                    bool escape1_danger = false;
+                    bool escape2_danger = false;
+
+                    if (escape1_ok)
+                    {
+                        escape1_danger = simulator_.is_danger(frame + 18, e1x, e1y);
+                    }
+
+                    if (escape2_ok)
+                    {
+                        escape2_danger = simulator_.is_danger(frame + 25, e2x, e2y);
+                    }
+
+                    // 1マス目 or 2マス目が危険、または2マス目が塞がっていれば
+                    // 誘導トラップ成立寄りとみなす
+                    bool trap_like =
+                        escape1_ok &&
+                        (escape1_danger ||
+                         !escape2_ok ||
+                         escape2_danger);
+
+                    if (trap_like)
+                    {
+                        if (can_place_bomb_and_escape(x, y, frame))
+                        {
+                            last_bomb_frame_ = frame;
+                            g_last_bomb_reason = "guided_trap_v2";
+                            return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 直線キル判定
         if (level_allows_straight_kill())
         {
+
+
             if (can_hit_enemy_now_or_after_one_step(
                     x, y, level_allows_one_step_prediction()))
             {
                 bool safe = can_place_bomb_and_escape(x, y, frame);
+
+                if (style() == SBR2AIStyle::Tricky)
+                {
+                    safe = can_place_bomb_and_escape_strict(x, y, frame);
+                }
 
                 // 近距離なら少し強気にする
                 i8 enemy_x = simulator_.board().enemy_x();
@@ -800,9 +925,19 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                     safe = can_place_bomb_and_escape_strict(x, y, frame);
                 }
 
-                if (safe || allow_risky)
+                bool allow_straight_kill = (safe || allow_risky);
+
+                // Tricky は誘導トラップを優先しやすくするため、
+                // 近距離では直線キルを少しだけ抑える
+                if (style() == SBR2AIStyle::Tricky)
+                {
+                    allow_straight_kill = safe;
+                }
+
+                if (allow_straight_kill)
                 {
                     last_bomb_frame_ = frame;
+                    g_last_bomb_reason = "straight_kill";
                     return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
                 }
             }
@@ -832,6 +967,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                         if (can_place_bomb_and_escape(x, y, frame))
                         {
                             last_bomb_frame_ = frame;
+                            g_last_bomb_reason = "guided_bomb";
                             return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
                         }
                     }
@@ -841,25 +977,110 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                         if (can_place_bomb_and_escape(x, y, frame))
                         {
                             last_bomb_frame_ = frame;
+                            g_last_bomb_reason = "guided_bomb";
                             return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
                         }
                     }
                 }
             }
 
-            // ===== 詰ませボム（強化版） =====
+            // =========================
+            // 逃げ方向誘導トラップ（上級）
+            // =========================
+            if (style() == SBR2AIStyle::Tricky ||
+                (style() == SBR2AIStyle::Aggressive && normalized_ai_level() >= 18))
+            {
+                i8 enemy_x = simulator_.board().enemy_x();
+                i8 enemy_y = simulator_.board().enemy_y();
+
+                int dx = enemy_x - x;
+                int dy = enemy_y - y;
+                int enemy_dist = std::abs(dx) + std::abs(dy);
+
+                if (enemy_dist >= 2 && enemy_dist <= 5)
+                {
+                    int dir_x = 0;
+                    int dir_y = 0;
+
+                    if (std::abs(dx) > std::abs(dy))
+                    {
+                        dir_x = (dx > 0 ? 1 : -1);
+                    }
+                    else
+                    {
+                        dir_y = (dy > 0 ? 1 : -1);
+                    }
+
+                    int escape_x = enemy_x + dir_x;
+                    int escape_y = enemy_y + dir_y;
+
+                    if (can_step_to(escape_x, escape_y))
+                    {
+                        bool guided_line =
+                            can_hit_enemy_in_straight_line(
+                                x, y,
+                                static_cast<i8>(escape_x),
+                                static_cast<i8>(escape_y));
+
+                        if (guided_line)
+                        {
+                            int survivable =
+                                count_enemy_survivable_cells_after_bomb(x, y, frame);
+
+                            if (survivable <= 3)
+                            {
+                                if (can_place_bomb_and_escape(x, y, frame))
+                                {
+                                    last_bomb_frame_ = frame;
+                                    g_last_bomb_reason = "guided_trap";
+                                    return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ===== 詰ませボム（強化版＋距離依存） =====
             if (style() == SBR2AIStyle::Tricky ||
                 (style() == SBR2AIStyle::Aggressive && normalized_ai_level() >= 17))
             {
+                i8 enemy_x = simulator_.board().enemy_x();
+                i8 enemy_y = simulator_.board().enemy_y();
+
+                int enemy_dist = std::abs(enemy_x - x) + std::abs(enemy_y - y);
+
                 int survivable =
                     count_enemy_survivable_cells_after_bomb(x, y, frame);
 
-                // 生存マスが少ないなら強気に置く
-                if (survivable <= 2)
+                int threshold = 2;
+
+                // 🔥 距離が近いほど強気にする
+                if (enemy_dist <= 2)
+                {
+                    threshold = 3; // かなり攻める
+                }
+                else if (enemy_dist <= 4)
+                {
+                    threshold = 2;
+                }
+                else
+                {
+                    threshold = 1; // 遠いときは慎重
+                }
+
+                // Trickyはさらに攻める
+                if (style() == SBR2AIStyle::Tricky && normalized_ai_level() >= 18)
+                {
+                    threshold += 1;
+                }
+
+                if (survivable <= threshold)
                 {
                     if (can_place_bomb_and_escape(x, y, frame))
                     {
                         last_bomb_frame_ = frame;
+                        g_last_bomb_reason = "survivable_checkmate";
                         return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
                     }
                 }
@@ -880,6 +1101,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                 }
 
                 last_bomb_frame_ = frame;
+                g_last_bomb_reason = "trap_normal";
                 return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
             }
         }
@@ -890,6 +1112,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             if (is_trap_possible(x, y, frame))
             {
                 last_bomb_frame_ = frame;
+                g_last_bomb_reason = "trap_second_chance";
                 return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
             }
         }
