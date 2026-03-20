@@ -831,7 +831,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
         }
 
         // ===== 誘導トラップ（Tricky専用・強化版） =====
-        if (style() == SBR2AIStyle::Tricky)
+        if (style() == SBR2AIStyle::Tricky && normalized_ai_level() >= 10)
         {
             i8 ex = simulator_.board().enemy_x();
             i8 ey = simulator_.board().enemy_y();
