@@ -829,7 +829,6 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             }
         }
 
-        // ===== 誘導トラップ（Tricky専用） =====
         // ===== 誘導トラップ（Tricky専用・強化版） =====
         if (style() == SBR2AIStyle::Tricky)
         {
@@ -844,7 +843,7 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
             {
                 int dist = std::abs(dx) + std::abs(dy);
 
-                if (dist >= 2 && dist <= 6)
+                if (dist >= 1 && dist <= 6)
                 {
                     // 逃げ方向（1マス目）
                     int dir_x = (dx != 0) ? (dx > 0 ? 1 : -1) : 0;
@@ -883,22 +882,11 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
                         escape2_danger ||
                         (escape1_ok && escape2_ok);
 
-                    std::cout
-                        << "DEBUG guided_trap_v2: "
-                        << "dist=" << dist
-                        << " escape1_ok=" << escape1_ok
-                        << " escape1_danger=" << escape1_danger
-                        << " escape2_ok=" << escape2_ok
-                        << " escape2_danger=" << escape2_danger
-                        << " trap_like=" << trap_like
-                        << std::endl;
-
                     if (trap_like)
                     {
                         if (can_place_bomb_and_escape(x, y, frame))
                         {
                             last_bomb_frame_ = frame;
-                            std::cout << "DEBUG: guided_trap_v2 triggered" << std::endl;
                             g_last_bomb_reason = "guided_trap_v2";
                             return reset_reposition_state_and_return(SBR2Action::PLACE_BOMB);
                         }
