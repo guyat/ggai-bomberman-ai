@@ -20,12 +20,13 @@ struct SBR2TimeNode
 
 enum class SBR2Action : u8
 {
-    WAIT = 0,
+    WAIT,
     UP,
     DOWN,
     LEFT,
     RIGHT,
-    PLACE_BOMB
+    PLACE_BOMB,
+    PUNCH_RIGHT
 };
 
 struct SBR2RouteNode

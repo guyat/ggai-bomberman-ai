@@ -679,18 +679,106 @@ bool SBR2AIBrain::is_trap_possible(i8 self_x, i8 self_y, i32 frame) const
     return survivable_cells <= threshold;
 }
 
+bool SBR2AIBrain::can_use_surrounded_punch_escape_right(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    // 右隣に爆弾が無いならパンチ対象外
+    if (!board.is_bomb(x + 1, y))
+    {
+        return false;
+    }
+
+    // 囲われ判定:
+    // 上・左・下が通れないなら「右へ盤面を崩したい状況」とみなす
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool down_blocked =
+        !board.is_inside(x, y + 1) ||
+        !board.is_passable(x, y + 1);
+
+    if (!(up_blocked && left_blocked && down_blocked))
+    {
+        return false;
+    }
+
+    // 条件1:
+    // 右に爆弾が2個以上連なっている
+    if (board.is_bomb(x + 2, y))
+    {
+        return true;
+    }
+
+    // 条件2:
+    // 右に爆弾1個 + その1つ先が壁・敵・非通行
+    const i8 next_x = x + 2;
+    const i8 next_y = y;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return true;
+    }
+
+    if (board.enemy_x() == next_x && board.enemy_y() == next_y)
+    {
+        return true;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
     g_last_bomb_reason.clear();
     SBR2EscapeResult result{};
-    bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);
 
-    if (!can_escape || will_be_dangerous_soon(x, y, frame))
+    if (can_use_surrounded_punch_escape_right(x, y, frame))
+    {
+        g_last_bomb_reason = "surrounded_punch_escape_right";
+        return reset_reposition_state_and_return(SBR2Action::PUNCH_RIGHT);
+    }
+
+    bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);
+    bool dangerous_soon = will_be_dangerous_soon(x, y, frame);
+    bool can_punch_escape_right =
+        can_use_surrounded_punch_escape_right(x, y, frame);
+
+    if (!can_escape || dangerous_soon)
     {
         if (can_escape)
         {
             return reset_reposition_state_and_return(result.first_action);
         }
+
+        // 囲われ脱出（最小版）
+        // まずは右方向パンチだけ対応
+        if (can_use_surrounded_punch_escape_right(x, y, frame))
+        {
+            g_last_bomb_reason = "surrounded_punch_escape_right";
+            return reset_reposition_state_and_return(SBR2Action::PUNCH_RIGHT);
+        }
+
+        g_last_bomb_reason =
+            std::string("escape_fail") + " can_escape=" + (can_escape ? "1" : "0") + " dangerous_soon=" + (dangerous_soon ? "1" : "0") + " punch_right=" + (can_punch_escape_right ? "1" : "0");
+
         return reset_reposition_state_and_return(SBR2Action::WAIT);
     }
 

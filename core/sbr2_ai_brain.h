@@ -100,4 +100,6 @@ private:
     SBR2Action move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const;
     bool can_step_to(i8 x, i8 y) const;
     SBR2Action fallback_safe_step(i8 self_x, i8 self_y) const;
+
+    bool can_use_surrounded_punch_escape_right(i8 x, i8 y, i32 frame) const;
 };
