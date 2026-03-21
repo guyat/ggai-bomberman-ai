@@ -21,6 +21,18 @@ struct SBR2AIBrainSettings
 {
     int ai_level = 20;
     SBR2AIStyle style = SBR2AIStyle::Aggressive; // ★追加
+
+    // 上級テク土台のみ(2026/03/21現在)
+    bool enable_bomb_tail = false;
+    bool enable_throw_chain = false;
+    bool enable_punch_chain = false;
+    bool enable_kick_chain = false;
+    bool enable_double_place_punch = false;
+    bool enable_throw_death_scythe = false;
+    bool enable_punch_death_scythe = false;
+    bool enable_kick_death_scythe = false;
+    bool enable_exploding_punch = false;
+    bool enable_right_timing_exploding_punch = false;
 };
 
 class SBR2AIBrain

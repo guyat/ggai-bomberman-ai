@@ -1296,7 +1296,8 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
     }
 
     // 縦に逃げやすいなら縦方向を優先
-    if ((can_up || can_down) && std::abs(dy) <= 3)
+    // ただし、横方向の差のほうが大きいときは上書きしない
+    if ((can_up || can_down) && std::abs(dy) <= 3 && std::abs(dy) > std::abs(dx))
     {
         if (dy > 0)
             first = SBR2Action::DOWN;
@@ -1344,8 +1345,8 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
     {
         int pseudo_rand = (frame + self_x * 7 + self_y * 13) % 5;
 
-        // 20%くらいの確率で方向を入れ替える
-        if (pseudo_rand == 0)
+        // 近距離では揺れを弱める
+        if (enemy_dist >= 4 && pseudo_rand == 0)
         {
             std::swap(first, second);
         }
@@ -1353,7 +1354,8 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
 
     if (enemy_dist <= 4 && !aligned_straight)
     {
-        if ((frame % 3) == 0)
+        // かなり近いときは往復しやすいので、frame依存の揺れを止める
+        if (enemy_dist >= 4 && (frame % 3) == 0)
         {
             std::swap(first, second);
         }
@@ -1388,12 +1390,82 @@ SBR2Action SBR2AIBrain::move_toward_enemy(i8 self_x, i8 self_y, i32 frame) const
 
     if (can_use_action(first))
     {
-        return first;
+        // 直前と逆方向への往復を少し抑える
+        bool reverse_of_last =
+            (first == SBR2Action::UP && last_reposition_action_ == SBR2Action::DOWN) ||
+            (first == SBR2Action::DOWN && last_reposition_action_ == SBR2Action::UP) ||
+            (first == SBR2Action::LEFT && last_reposition_action_ == SBR2Action::RIGHT) ||
+            (first == SBR2Action::RIGHT && last_reposition_action_ == SBR2Action::LEFT);
+
+        // すでに敵と同じ列にいて、さらに縦へ行くと行き過ぎやすいなら少し抑える
+        bool overshoot_vertical =
+            (self_x == enemy_x) &&
+            ((first == SBR2Action::UP && self_y < enemy_y) ||
+             (first == SBR2Action::DOWN && self_y > enemy_y));
+
+        // すでに敵と同じ行にいて、さらに横へ行くと行き過ぎやすいなら少し抑える
+        bool overshoot_horizontal =
+            (self_y == enemy_y) &&
+            ((first == SBR2Action::LEFT && self_x < enemy_x) ||
+             (first == SBR2Action::RIGHT && self_x > enemy_x));
+
+        if ((!reverse_of_last && !overshoot_vertical && !overshoot_horizontal) ||
+            !can_use_action(second))
+        {
+            return first;
+        }
     }
 
     if (can_use_action(second))
     {
         return second;
+    }
+
+    // ここまでで first / second が使えないなら、
+    // 「通れるだけ」ではなく「敵に近づく fallback」を選ぶ
+    SBR2Action best_fallback = SBR2Action::WAIT;
+    int best_dist = 9999;
+
+    auto try_fallback = [&](SBR2Action action, i8 nx, i8 ny)
+    {
+        if (!can_step_to(nx, ny))
+        {
+            return;
+        }
+
+        int dist_after = std::abs(enemy_x - nx) + std::abs(enemy_y - ny);
+
+        bool better = false;
+
+        if (dist_after < best_dist)
+        {
+            better = true;
+        }
+        else if (dist_after == best_dist)
+        {
+            // 同点なら、直前と同じ方向を優先して往復を減らす
+            if (action == last_reposition_action_ &&
+                best_fallback != last_reposition_action_)
+            {
+                better = true;
+            }
+        }
+
+        if (better)
+        {
+            best_dist = dist_after;
+            best_fallback = action;
+        }
+    };
+
+    try_fallback(SBR2Action::UP, self_x, self_y - 1);
+    try_fallback(SBR2Action::DOWN, self_x, self_y + 1);
+    try_fallback(SBR2Action::LEFT, self_x - 1, self_y);
+    try_fallback(SBR2Action::RIGHT, self_x + 1, self_y);
+
+    if (best_fallback != SBR2Action::WAIT)
+    {
+        return best_fallback;
     }
 
     return fallback_safe_step(self_x, self_y);

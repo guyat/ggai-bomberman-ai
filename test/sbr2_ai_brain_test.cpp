@@ -5,8 +5,6 @@
 #include "../core/sbr2_pathfinder.h"
 #include "../core/sbr2_simulator.h"
 
-#include <string>
-
 extern std::string g_last_bomb_reason;
 
 std::string action_to_string(SBR2Action action)
@@ -1890,6 +1888,789 @@ int main()
         }
 
         print_case_summary("CASE 39", false, "NOTE observation only");
+    }
+
+    // CASE 40
+    // 不自然WAIT検出（斜め近距離・攻めれるはず）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(5, 6);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 40: unnatural WAIT check (diagonal near)\n";
+
+        // Aggressive
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 40", false, "NOTE observation only");
+    }
+
+    // CASE 41
+    // 不自然WAIT検出（一直線中距離・攻めれるはず）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(4, 8);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 41: unnatural WAIT check (straight line)\n";
+
+        // Aggressive
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 41", false, "NOTE observation only");
+    }
+
+    // CASE 42
+    // 低Lvの不自然WAIT検出（斜め中距離）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(6, 7);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 42: low-level WAIT check (diagonal mid)\n";
+
+        // Aggressive Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Aggressive Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Careful Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Careful Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        // Tricky Lv5
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 5;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_next_action(4, 5, 100);
+
+            std::cout << "[Tricky Lv5] action = " << action_to_string(action) << "\n";
+            if (!g_last_bomb_reason.empty())
+                std::cout << "  reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 42", false, "NOTE observation only");
+    }
+
+    // CASE 43
+    // 再配置の不自然さ確認（Aggressive / Careful / Tricky）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 43: reposition check\n";
+
+        board.set_enemy_position(6, 7);
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_reposition_action_for_test(4, 5, 100);
+
+            std::cout << "[Aggressive Lv20] action = " << action_to_string(action) << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_reposition_action_for_test(4, 5, 100);
+
+            std::cout << "[Careful Lv20] action = " << action_to_string(action) << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_reposition_action_for_test(4, 5, 100);
+
+            std::cout << "[Tricky Lv20] action = " << action_to_string(action) << "\n";
+        }
+
+        print_case_summary("CASE 43", false, "NOTE observation only");
+    }
+
+    // CASE 44
+    // 再配置の不自然さ確認（片側が塞がれている）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 44: reposition check (one side blocked)\n";
+
+        board.set_enemy_position(6, 7);
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_reposition_action_for_test(4, 6, 100);
+
+            std::cout << "[Aggressive Lv20] action = " << action_to_string(action) << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_reposition_action_for_test(4, 6, 100);
+
+            std::cout << "[Careful Lv20] action = " << action_to_string(action) << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+            SBR2Action action = brain.decide_reposition_action_for_test(4, 6, 100);
+
+            std::cout << "[Tricky Lv20] action = " << action_to_string(action) << "\n";
+        }
+
+        print_case_summary("CASE 44", false, "NOTE observation only");
+    }
+
+    // CASE 45
+    // 再配置のブレ確認（同じ状況で連続フレーム）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(6, 7);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 45: reposition jitter check\n";
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Aggressive Lv20]";
+            for (int f = 100; f <= 104; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(4, 5, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Careful Lv20]";
+            for (int f = 100; f <= 104; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(4, 5, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Tricky Lv20]";
+            for (int f = 100; f <= 104; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(4, 5, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        } 
+
+        print_case_summary("CASE 45", false, "NOTE observation only");
+    }
+
+    // CASE 46
+    // 再配置の壁際確認（壁際で変な方向に粘らないか）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(2, 8);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 46: reposition near wall check\n";
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Aggressive Lv20]";
+            for (int f = 100; f <= 104; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(0, 6, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Careful Lv20]";
+            for (int f = 100; f <= 104; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(0, 6, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Tricky Lv20]";
+            for (int f = 100; f <= 104; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(0, 6, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        }
+
+        print_case_summary("CASE 46", false, "NOTE observation only");
+    }
+
+    // CASE 47
+    // 再配置の行き過ぎ確認（長めフレーム）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(6, 7);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 47: reposition long-sequence check\n";
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Aggressive Lv20]";
+            for (int f = 100; f <= 111; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(4, 5, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Careful Lv20]";
+            for (int f = 100; f <= 111; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(4, 5, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            std::cout << "[Tricky Lv20]";
+            for (int f = 100; f <= 111; ++f)
+            {
+                SBR2Action action = brain.decide_reposition_action_for_test(4, 5, f);
+                std::cout << " " << action_to_string(action);
+            }
+            std::cout << "\n";
+        }
+
+        print_case_summary("CASE 47", false, "NOTE observation only");
+    }
+
+    // CASE 48
+    // 再配置の追従確認（行動に応じて自分座標も進める）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(6, 7);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 48: reposition follow-through check\n";
+
+        auto step_position = [](i8 &x, i8 &y, i8 enemy_x, i8 enemy_y, SBR2Action action)
+        {
+            i8 nx = x;
+            i8 ny = y;
+
+            switch (action)
+            {
+            case SBR2Action::UP:
+                --ny;
+                break;
+            case SBR2Action::DOWN:
+                ++ny;
+                break;
+            case SBR2Action::LEFT:
+                --nx;
+                break;
+            case SBR2Action::RIGHT:
+                ++nx;
+                break;
+            default:
+                break;
+            }
+
+            // 敵マスには重ならない（実戦では同じマスに立てないため）
+            if (nx == enemy_x && ny == enemy_y)
+            {
+                return;
+            }
+
+            x = nx;
+            y = ny;
+        };
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            i8 sx = 4;
+            i8 sy = 5;
+
+            std::cout << "[Aggressive Lv20]";
+            for (int f = 100; f <= 105; ++f)
+            {
+                std::cout << " (" << static_cast<int>(sx) << "," << static_cast<int>(sy) << ")";
+                SBR2Action action = brain.decide_reposition_action_for_test(sx, sy, f);
+                std::cout << "->" << action_to_string(action);
+                step_position(sx, sy, 6, 7, action);
+
+                // 敵の隣まで来たら十分なので終了
+                int dist_to_enemy = std::abs(6 - sx) + std::abs(7 - sy);
+                if (dist_to_enemy <= 1)
+                {
+                    break;
+                }
+            }
+            std::cout << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            i8 sx = 4;
+            i8 sy = 5;
+
+            std::cout << "[Careful Lv20]";
+            for (int f = 100; f <= 105; ++f)
+            {
+                std::cout << " (" << static_cast<int>(sx) << "," << static_cast<int>(sy) << ")";
+                SBR2Action action = brain.decide_reposition_action_for_test(sx, sy, f);
+                std::cout << "->" << action_to_string(action);
+                step_position(sx, sy, 6, 7, action);
+
+                // 敵の隣まで来たら十分なので終了
+                int dist_to_enemy = std::abs(6 - sx) + std::abs(7 - sy);
+                if (dist_to_enemy <= 1)
+                {
+                    break;
+                }
+            }
+            std::cout << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            i8 sx = 4;
+            i8 sy = 5;
+
+            std::cout << "[Tricky Lv20]";
+            for (int f = 100; f <= 105; ++f)
+            {
+                std::cout << " (" << static_cast<int>(sx) << "," << static_cast<int>(sy) << ")";
+                SBR2Action action = brain.decide_reposition_action_for_test(sx, sy, f);
+                std::cout << "->" << action_to_string(action);
+                step_position(sx, sy, 6, 7, action);
+
+                // 敵の隣まで来たら十分なので終了
+                int dist_to_enemy = std::abs(6 - sx) + std::abs(7 - sy);
+                if (dist_to_enemy <= 1)
+                {
+                    break;
+                }
+            }
+            std::cout << "\n";
+        }
+
+        print_case_summary("CASE 48", false, "NOTE observation only");
+    }
+
+    // CASE 49
+    // 再配置の追従確認（壁際）
+    {
+        SBR2Simulator simulator;
+
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+        board.set_enemy_position(2, 8);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        print_separator();
+        std::cout << "CASE 49: reposition follow-through near wall\n";
+
+        auto step_position = [](i8 &x, i8 &y, i8 enemy_x, i8 enemy_y, SBR2Action action)
+        {
+            i8 nx = x;
+            i8 ny = y;
+
+            switch (action)
+            {
+            case SBR2Action::UP:
+                --ny;
+                break;
+            case SBR2Action::DOWN:
+                ++ny;
+                break;
+            case SBR2Action::LEFT:
+                --nx;
+                break;
+            case SBR2Action::RIGHT:
+                ++nx;
+                break;
+            default:
+                break;
+            }
+
+            // 敵マスには重ならない（実戦では同じマスに立てないため）
+            if (nx == enemy_x && ny == enemy_y)
+            {
+                return;
+            }
+
+            x = nx;
+            y = ny;
+        };
+
+        // Aggressive Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Aggressive;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            i8 sx = 0;
+            i8 sy = 6;
+
+            std::cout << "[Aggressive Lv20]";
+            for (int f = 100; f <= 105; ++f)
+            {
+                std::cout << " (" << static_cast<int>(sx) << "," << static_cast<int>(sy) << ")";
+                SBR2Action action = brain.decide_reposition_action_for_test(sx, sy, f);
+                std::cout << "->" << action_to_string(action);
+                step_position(sx, sy, 2, 8, action);
+
+                // 敵の隣まで来たら十分なので終了
+                int dist_to_enemy = std::abs(2 - sx) + std::abs(8 - sy);
+                if (dist_to_enemy <= 1)
+                {
+                    break;
+                }
+            }
+            std::cout << "\n";
+        }
+
+        // Careful Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Careful;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            i8 sx = 0;
+            i8 sy = 6;
+
+            std::cout << "[Careful Lv20]";
+            for (int f = 100; f <= 105; ++f)
+            {
+                std::cout << " (" << static_cast<int>(sx) << "," << static_cast<int>(sy) << ")";
+                SBR2Action action = brain.decide_reposition_action_for_test(sx, sy, f);
+                std::cout << "->" << action_to_string(action);
+                step_position(sx, sy, 2, 8, action);
+
+                // 敵の隣まで来たら十分なので終了
+                int dist_to_enemy = std::abs(2 - sx) + std::abs(8 - sy);
+                if (dist_to_enemy <= 1)
+                {
+                    break;
+                }
+            }
+            std::cout << "\n";
+        }
+
+        // Tricky Lv20
+        {
+            SBR2AIBrainSettings settings;
+            settings.ai_level = 20;
+            settings.style = SBR2AIStyle::Tricky;
+
+            SBR2AIBrain brain(simulator, pathfinder, settings);
+
+            i8 sx = 0;
+            i8 sy = 6;
+
+            std::cout << "[Tricky Lv20]";
+            for (int f = 100; f <= 105; ++f)
+            {
+                std::cout << " (" << static_cast<int>(sx) << "," << static_cast<int>(sy) << ")";
+                SBR2Action action = brain.decide_reposition_action_for_test(sx, sy, f);
+                std::cout << "->" << action_to_string(action);
+                step_position(sx, sy, 2, 8, action);
+
+                // 敵の隣まで来たら十分なので終了
+                int dist_to_enemy = std::abs(2 - sx) + std::abs(8 - sy);
+                if (dist_to_enemy <= 1)
+                {
+                    break;
+                }
+            }
+            std::cout << "\n";
+        }
+
+        print_case_summary("CASE 49", false, "NOTE observation only");
     }
 
     print_separator();
