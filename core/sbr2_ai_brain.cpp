@@ -877,6 +877,69 @@ bool SBR2AIBrain::can_use_surrounded_punch_escape_up(i8 x, i8 y, i32 frame) cons
     return false;
 }
 
+bool SBR2AIBrain::can_use_surrounded_punch_escape_down(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    // 下に爆弾が無いなら対象外
+    if (!board.is_bomb(x, y + 1))
+    {
+        return false;
+    }
+
+    // 囲われ判定（上・左・右が詰まってる）
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool right_blocked =
+        !board.is_inside(x + 1, y) ||
+        !board.is_passable(x + 1, y);
+
+    if (!(up_blocked && left_blocked && right_blocked))
+    {
+        return false;
+    }
+
+    // 2連爆弾
+    if (board.is_bomb(x, y + 2))
+    {
+        return true;
+    }
+
+    // 1個 + 先が壁/敵/非通行
+    const i8 next_x = x;
+    const i8 next_y = y + 2;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return true;
+    }
+
+    if (board.enemy_x() == next_x && board.enemy_y() == next_y)
+    {
+        return true;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
     g_last_bomb_reason.clear();
@@ -898,6 +961,12 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
     {
         g_last_bomb_reason = "surrounded_punch_escape_up";
         return reset_reposition_state_and_return(SBR2Action::PUNCH_UP);
+    }
+
+    if (can_use_surrounded_punch_escape_down(x, y, frame))
+    {
+        g_last_bomb_reason = "surrounded_punch_escape_down";
+        return reset_reposition_state_and_return(SBR2Action::PUNCH_DOWN);
     }
 
     bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);

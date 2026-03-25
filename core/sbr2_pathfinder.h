@@ -28,7 +28,8 @@ enum class SBR2Action : u8
     PLACE_BOMB,
     PUNCH_RIGHT,
     PUNCH_LEFT,
-    PUNCH_UP
+    PUNCH_UP,
+    PUNCH_DOWN
 };
 
 struct SBR2RouteNode

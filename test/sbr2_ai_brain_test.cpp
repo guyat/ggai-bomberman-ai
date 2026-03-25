@@ -29,6 +29,8 @@ std::string action_to_string(SBR2Action action)
         return "PUNCH_LEFT";
     case SBR2Action::PUNCH_UP:
         return "PUNCH_UP";
+    case SBR2Action::PUNCH_DOWN:
+        return "PUNCH_DOWN";
     default:
         return "UNKNOWN";
     }
@@ -2856,6 +2858,65 @@ int main()
             std::string detail =
                 "NOTE action=" + action_to_string(action);
             print_case_summary("CASE 52", false, detail);
+        }
+    }
+
+    // CASE 53
+    // surrounded punch escape down (direct board setup)
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        // 自分位置 (0, 8)
+        // 上: 爆弾
+        // 左: 外周
+        // 右: 爆弾
+        // 下: 爆弾2連
+        board.set_cell(0, 7, SBR2Board::CellType::BOMB);
+        board.set_cell(1, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(0, 9, SBR2Board::CellType::BOMB);
+        board.set_cell(0, 10, SBR2Board::CellType::BOMB);
+
+        board.set_enemy_position(12, 0);
+
+        print_separator();
+        std::cout << "CASE 53: surrounded punch escape down (direct board setup)\n";
+
+        std::cout << "debug bomb(0,7) = " << (board.is_bomb(0, 7) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(1,8) = " << (board.is_bomb(1, 8) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(0,9) = " << (board.is_bomb(0, 9) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(0,10) = " << (board.is_bomb(0, 10) ? "1" : "0") << "\n";
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(0, 8, 138);
+
+        std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "reason = " << g_last_bomb_reason << "\n";
+        }
+
+        bool ok53 = (action == SBR2Action::PUNCH_DOWN);
+
+        if (ok53)
+        {
+            print_case_summary("CASE 53", true);
+        }
+        else
+        {
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 53", false, detail);
         }
     }
 
