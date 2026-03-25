@@ -997,6 +997,17 @@ bool SBR2AIBrain::can_use_surrounded_kick_escape_right(i8 x, i8 y, i32 frame) co
         return false;
     }
 
+    // 2マス間隔の包囲列候補:
+    // 爆弾-空き-爆弾 なら普通キックではなく
+    // 1マスキックストップ候補として扱いたいので除外する
+    const i8 far_x = x + 3;
+    const i8 far_y = y;
+
+    if (board.is_inside(far_x, far_y) && board.is_bomb(far_x, far_y))
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -1047,6 +1058,17 @@ bool SBR2AIBrain::can_use_surrounded_kick_escape_left(i8 x, i8 y, i32 frame) con
     }
 
     if (!board.is_passable(next_x, next_y))
+    {
+        return false;
+    }
+
+    // 2マス間隔の包囲列候補:
+    // 爆弾-空き-爆弾 なら普通キックではなく
+    // 1マスキックストップ候補として扱いたいので除外する
+    const i8 far_x = x - 3;
+    const i8 far_y = y;
+
+    if (board.is_inside(far_x, far_y) && board.is_bomb(far_x, far_y))
     {
         return false;
     }
@@ -1240,6 +1262,204 @@ bool SBR2AIBrain::can_use_enclosure_kick_stop_up(i8 x, i8 y, i32 frame) const
     return true;
 }
 
+bool SBR2AIBrain::can_use_enclosure_kick_stop_left(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    // 左隣に爆弾が無いなら対象外
+    if (!board.is_bomb(x - 1, y))
+    {
+        return false;
+    }
+
+    // 上右下が塞がっていること
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    bool right_blocked =
+        !board.is_inside(x + 1, y) ||
+        !board.is_passable(x + 1, y);
+
+    bool down_blocked =
+        !board.is_inside(x, y + 1) ||
+        !board.is_passable(x, y + 1);
+
+    if (!(up_blocked && right_blocked && down_blocked))
+    {
+        return false;
+    }
+
+    // 1マス先は空き
+    const i8 next_x = x - 2;
+    const i8 next_y = y;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return false;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return false;
+    }
+
+    // さらにその先に爆弾がある
+    const i8 far_x = x - 3;
+    const i8 far_y = y;
+
+    if (!board.is_inside(far_x, far_y))
+    {
+        return false;
+    }
+
+    if (!board.is_bomb(far_x, far_y))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool SBR2AIBrain::can_use_enclosure_kick_stop_right(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    // 右隣に爆弾が無いなら対象外
+    if (!board.is_bomb(x + 1, y))
+    {
+        return false;
+    }
+
+    // 上左下が塞がっていること
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool down_blocked =
+        !board.is_inside(x, y + 1) ||
+        !board.is_passable(x, y + 1);
+
+    if (!(up_blocked && left_blocked && down_blocked))
+    {
+        return false;
+    }
+
+    // 1マス先は空き
+    const i8 next_x = x + 2;
+    const i8 next_y = y;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return false;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return false;
+    }
+
+    // さらにその先に爆弾がある
+    const i8 far_x = x + 3;
+    const i8 far_y = y;
+
+    if (!board.is_inside(far_x, far_y))
+    {
+        return false;
+    }
+
+    if (!board.is_bomb(far_x, far_y))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool SBR2AIBrain::can_use_enclosure_kick_stop_down(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    // 下隣に爆弾が無いなら対象外
+    if (!board.is_bomb(x, y + 1))
+    {
+        return false;
+    }
+
+    // 上左右が塞がっていること
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool right_blocked =
+        !board.is_inside(x + 1, y) ||
+        !board.is_passable(x + 1, y);
+
+    if (!(up_blocked && left_blocked && right_blocked))
+    {
+        return false;
+    }
+
+    // 1マス先は空き
+    const i8 next_x = x;
+    const i8 next_y = y + 2;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return false;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return false;
+    }
+
+    // さらにその先に爆弾がある
+    const i8 far_x = x;
+    const i8 far_y = y + 3;
+
+    if (!board.is_inside(far_x, far_y))
+    {
+        return false;
+    }
+
+    if (!board.is_bomb(far_x, far_y))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
     g_last_bomb_reason.clear();
@@ -1281,6 +1501,18 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
         return reset_reposition_state_and_return(SBR2Action::KICK_LEFT);
     }
 
+    if (can_use_enclosure_kick_stop_left(x, y, frame))
+    {
+        g_last_bomb_reason = "enclosure_kick_stop_left";
+        return reset_reposition_state_and_return(SBR2Action::KICK_STOP_LEFT);
+    }
+
+    if (can_use_enclosure_kick_stop_right(x, y, frame))
+    {
+        g_last_bomb_reason = "enclosure_kick_stop_right";
+        return reset_reposition_state_and_return(SBR2Action::KICK_STOP_RIGHT);
+    }
+
     if (can_use_enclosure_kick_stop_up(x, y, frame))
     {
         g_last_bomb_reason = "enclosure_kick_stop_up";
@@ -1291,6 +1523,12 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
     {
         g_last_bomb_reason = "surrounded_kick_escape_up";
         return reset_reposition_state_and_return(SBR2Action::KICK_UP);
+    }
+
+    if (can_use_enclosure_kick_stop_down(x, y, frame))
+    {
+        g_last_bomb_reason = "enclosure_kick_stop_down";
+        return reset_reposition_state_and_return(SBR2Action::KICK_STOP_DOWN);
     }
 
     if (can_use_surrounded_kick_escape_down(x, y, frame))

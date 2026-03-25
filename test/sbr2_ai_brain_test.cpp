@@ -41,6 +41,12 @@ std::string action_to_string(SBR2Action action)
         return "KICK_DOWN";
     case SBR2Action::KICK_STOP_UP:
         return "KICK_STOP_UP";
+    case SBR2Action::KICK_STOP_LEFT:
+        return "KICK_STOP_LEFT";
+    case SBR2Action::KICK_STOP_RIGHT:
+        return "KICK_STOP_RIGHT";
+    case SBR2Action::KICK_STOP_DOWN:
+        return "KICK_STOP_DOWN";
     default:
         return "UNKNOWN";
     }
@@ -3234,6 +3240,192 @@ int main()
             std::string detail =
                 "NOTE action=" + action_to_string(action);
             print_case_summary("CASE 58", false, detail);
+        }
+    }
+
+    // CASE 59
+    // enclosure kick-stop left
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        // 自分位置は (8, 2)
+        //
+        // 左に 爆弾-空き-爆弾
+        // 上右下を塞ぐ
+        board.set_cell(8, 1, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(9, 2, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(8, 3, SBR2Board::CellType::HARD_BLOCK);
+
+        board.set_cell(7, 2, SBR2Board::CellType::BOMB);
+        board.set_cell(5, 2, SBR2Board::CellType::BOMB);
+
+        board.set_enemy_position(12, 10);
+
+        print_separator();
+        std::cout << "CASE 59: enclosure kick-stop left\n";
+
+        std::cout << "debug up_blocked(8,1) = " << (!board.is_passable(8, 1) ? "1" : "0") << "\n";
+        std::cout << "debug right_blocked(9,2) = " << (!board.is_passable(9, 2) ? "1" : "0") << "\n";
+        std::cout << "debug down_blocked(8,3) = " << (!board.is_passable(8, 3) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(7,2) = " << (board.is_bomb(7, 2) ? "1" : "0") << "\n";
+        std::cout << "debug empty(6,2) = " << (board.is_passable(6, 2) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(5,2) = " << (board.is_bomb(5, 2) ? "1" : "0") << "\n";
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(8, 2, 138);
+
+        std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "reason = " << g_last_bomb_reason << "\n";
+        }
+
+        bool ok59 = (action == SBR2Action::KICK_STOP_LEFT);
+
+        if (ok59)
+        {
+            print_case_summary("CASE 59", true);
+        }
+        else
+        {
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 59", false, detail);
+        }
+    }
+
+    // CASE 60
+    // enclosure kick-stop right
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        // 自分位置は (4, 2)
+        //
+        // 右に 爆弾-空き-爆弾
+        // 上左下を塞ぐ
+        board.set_cell(4, 1, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(3, 2, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(4, 3, SBR2Board::CellType::HARD_BLOCK);
+
+        board.set_cell(5, 2, SBR2Board::CellType::BOMB);
+        board.set_cell(7, 2, SBR2Board::CellType::BOMB);
+
+        board.set_enemy_position(12, 10);
+
+        print_separator();
+        std::cout << "CASE 60: enclosure kick-stop right\n";
+
+        std::cout << "debug up_blocked(4,1) = " << (!board.is_passable(4, 1) ? "1" : "0") << "\n";
+        std::cout << "debug left_blocked(3,2) = " << (!board.is_passable(3, 2) ? "1" : "0") << "\n";
+        std::cout << "debug down_blocked(4,3) = " << (!board.is_passable(4, 3) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(5,2) = " << (board.is_bomb(5, 2) ? "1" : "0") << "\n";
+        std::cout << "debug empty(6,2) = " << (board.is_passable(6, 2) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(7,2) = " << (board.is_bomb(7, 2) ? "1" : "0") << "\n";
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(4, 2, 138);
+
+        std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "reason = " << g_last_bomb_reason << "\n";
+        }
+
+        bool ok60 = (action == SBR2Action::KICK_STOP_RIGHT);
+
+        if (ok60)
+        {
+            print_case_summary("CASE 60", true);
+        }
+        else
+        {
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 60", false, detail);
+        }
+    }
+
+    // CASE 61
+    // enclosure kick-stop down
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        // 自分位置は (2, 4)
+        //
+        // 下に 爆弾-空き-爆弾
+        // 上左右を塞ぐ
+        board.set_cell(2, 3, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(1, 4, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(3, 4, SBR2Board::CellType::HARD_BLOCK);
+
+        board.set_cell(2, 5, SBR2Board::CellType::BOMB);
+        board.set_cell(2, 7, SBR2Board::CellType::BOMB);
+
+        board.set_enemy_position(12, 10);
+
+        print_separator();
+        std::cout << "CASE 61: enclosure kick-stop down\n";
+
+        std::cout << "debug up_blocked(2,3) = " << (!board.is_passable(2, 3) ? "1" : "0") << "\n";
+        std::cout << "debug left_blocked(1,4) = " << (!board.is_passable(1, 4) ? "1" : "0") << "\n";
+        std::cout << "debug right_blocked(3,4) = " << (!board.is_passable(3, 4) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(2,5) = " << (board.is_bomb(2, 5) ? "1" : "0") << "\n";
+        std::cout << "debug empty(2,6) = " << (board.is_passable(2, 6) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(2,7) = " << (board.is_bomb(2, 7) ? "1" : "0") << "\n";
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(2, 4, 138);
+
+        std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "reason = " << g_last_bomb_reason << "\n";
+        }
+
+        bool ok61 = (action == SBR2Action::KICK_STOP_DOWN);
+
+        if (ok61)
+        {
+            print_case_summary("CASE 61", true);
+        }
+        else
+        {
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 61", false, detail);
         }
     }
 

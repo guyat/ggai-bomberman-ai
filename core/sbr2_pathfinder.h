@@ -34,7 +34,10 @@ enum class SBR2Action : u8
     KICK_LEFT,
     KICK_UP,
     KICK_DOWN,
-    KICK_STOP_UP
+    KICK_STOP_UP,
+    KICK_STOP_LEFT,
+    KICK_STOP_RIGHT,
+    KICK_STOP_DOWN
 };
 
 struct SBR2RouteNode
