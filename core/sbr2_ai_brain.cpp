@@ -811,6 +811,72 @@ bool SBR2AIBrain::can_use_surrounded_punch_escape_left(i8 x, i8 y, i32 frame) co
     return false;
 }
 
+bool SBR2AIBrain::can_use_surrounded_punch_escape_up(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    // 上隣に爆弾が無いならパンチ対象外
+    if (!board.is_bomb(x, y - 1))
+    {
+        return false;
+    }
+
+    // 囲われ判定:
+    // 左・右・下が通れないなら「上へ盤面を崩したい状況」とみなす
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool right_blocked =
+        !board.is_inside(x + 1, y) ||
+        !board.is_passable(x + 1, y);
+
+    bool down_blocked =
+        !board.is_inside(x, y + 1) ||
+        !board.is_passable(x, y + 1);
+
+    if (!(left_blocked && right_blocked && down_blocked))
+    {
+        return false;
+    }
+
+    // 条件1:
+    // 上に爆弾が2個以上連なっている
+    if (board.is_bomb(x, y - 2))
+    {
+        return true;
+    }
+
+    // 条件2:
+    // 上に爆弾1個 + その1つ先が壁・敵・非通行
+    const i8 next_x = x;
+    const i8 next_y = y - 2;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return true;
+    }
+
+    if (board.enemy_x() == next_x && board.enemy_y() == next_y)
+    {
+        return true;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
     g_last_bomb_reason.clear();
@@ -826,6 +892,12 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
     {
         g_last_bomb_reason = "surrounded_punch_escape_left";
         return reset_reposition_state_and_return(SBR2Action::PUNCH_LEFT);
+    }
+
+    if (can_use_surrounded_punch_escape_up(x, y, frame))
+    {
+        g_last_bomb_reason = "surrounded_punch_escape_up";
+        return reset_reposition_state_and_return(SBR2Action::PUNCH_UP);
     }
 
     bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);

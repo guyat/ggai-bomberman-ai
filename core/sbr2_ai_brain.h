@@ -103,4 +103,5 @@ private:
 
     bool can_use_surrounded_punch_escape_right(i8 x, i8 y, i32 frame) const;
     bool can_use_surrounded_punch_escape_left(i8 x, i8 y, i32 frame) const;
+    bool can_use_surrounded_punch_escape_up(i8 x, i8 y, i32 frame) const;
 };
