@@ -110,4 +110,6 @@ private:
     bool can_use_surrounded_kick_escape_left(i8 x, i8 y, i32 frame) const;
     bool can_use_surrounded_kick_escape_up(i8 x, i8 y, i32 frame) const;
     bool can_use_surrounded_kick_escape_down(i8 x, i8 y, i32 frame) const;
+
+    bool can_use_enclosure_kick_stop_up(i8 x, i8 y, i32 frame) const;
 };
