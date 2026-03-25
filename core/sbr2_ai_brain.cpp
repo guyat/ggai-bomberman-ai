@@ -940,6 +940,228 @@ bool SBR2AIBrain::can_use_surrounded_punch_escape_down(i8 x, i8 y, i32 frame) co
     return false;
 }
 
+bool SBR2AIBrain::can_use_surrounded_kick_escape_right(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    // 右隣に爆弾がないならキック対象外
+    if (!board.is_bomb(x + 1, y))
+    {
+        return false;
+    }
+
+    // 囲われ判定:
+    // 上・左・下が通れないなら、右へ崩したい状況
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool down_blocked =
+        !board.is_inside(x, y + 1) ||
+        !board.is_passable(x, y + 1);
+
+    if (!(up_blocked && left_blocked && down_blocked))
+    {
+        return false;
+    }
+
+    // キックは「右隣1個だけ」で、その先が空いているときに使う
+    // 2連以上なら今回はパンチ側に任せる
+    if (board.is_bomb(x + 2, y))
+    {
+        return false;
+    }
+
+    // 少なくとも1マス先には進める必要がある
+    const i8 next_x = x + 2;
+    const i8 next_y = y;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return false;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool SBR2AIBrain::can_use_surrounded_kick_escape_left(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    if (!board.is_bomb(x - 1, y))
+    {
+        return false;
+    }
+
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    bool right_blocked =
+        !board.is_inside(x + 1, y) ||
+        !board.is_passable(x + 1, y);
+
+    bool down_blocked =
+        !board.is_inside(x, y + 1) ||
+        !board.is_passable(x, y + 1);
+
+    if (!(up_blocked && right_blocked && down_blocked))
+    {
+        return false;
+    }
+
+    if (board.is_bomb(x - 2, y))
+    {
+        return false;
+    }
+
+    const i8 next_x = x - 2;
+    const i8 next_y = y;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return false;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool SBR2AIBrain::can_use_surrounded_kick_escape_up(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    if (!board.is_bomb(x, y - 1))
+    {
+        return false;
+    }
+
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool right_blocked =
+        !board.is_inside(x + 1, y) ||
+        !board.is_passable(x + 1, y);
+
+    bool down_blocked =
+        !board.is_inside(x, y + 1) ||
+        !board.is_passable(x, y + 1);
+
+    if (!(left_blocked && right_blocked && down_blocked))
+    {
+        return false;
+    }
+
+    if (board.is_bomb(x, y - 2))
+    {
+        return false;
+    }
+
+    const i8 next_x = x;
+    const i8 next_y = y - 2;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return false;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool SBR2AIBrain::can_use_surrounded_kick_escape_down(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    if (!board.is_bomb(x, y + 1))
+    {
+        return false;
+    }
+
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool right_blocked =
+        !board.is_inside(x + 1, y) ||
+        !board.is_passable(x + 1, y);
+
+    if (!(up_blocked && left_blocked && right_blocked))
+    {
+        return false;
+    }
+
+    if (board.is_bomb(x, y + 2))
+    {
+        return false;
+    }
+
+    const i8 next_x = x;
+    const i8 next_y = y + 2;
+
+    if (!board.is_inside(next_x, next_y))
+    {
+        return false;
+    }
+
+    if (!board.is_passable(next_x, next_y))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
     g_last_bomb_reason.clear();
@@ -967,6 +1189,30 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
     {
         g_last_bomb_reason = "surrounded_punch_escape_down";
         return reset_reposition_state_and_return(SBR2Action::PUNCH_DOWN);
+    }
+
+    if (can_use_surrounded_kick_escape_right(x, y, frame))
+    {
+        g_last_bomb_reason = "surrounded_kick_escape_right";
+        return reset_reposition_state_and_return(SBR2Action::KICK_RIGHT);
+    }
+
+    if (can_use_surrounded_kick_escape_left(x, y, frame))
+    {
+        g_last_bomb_reason = "surrounded_kick_escape_left";
+        return reset_reposition_state_and_return(SBR2Action::KICK_LEFT);
+    }
+
+    if (can_use_surrounded_kick_escape_up(x, y, frame))
+    {
+        g_last_bomb_reason = "surrounded_kick_escape_up";
+        return reset_reposition_state_and_return(SBR2Action::KICK_UP);
+    }
+
+    if (can_use_surrounded_kick_escape_down(x, y, frame))
+    {
+        g_last_bomb_reason = "surrounded_kick_escape_down";
+        return reset_reposition_state_and_return(SBR2Action::KICK_DOWN);
     }
 
     bool can_escape = pathfinder_.find_escape_action(x, y, frame, result);
