@@ -115,4 +115,6 @@ private:
     bool can_use_enclosure_kick_stop_left(i8 x, i8 y, i32 frame) const;
     bool can_use_enclosure_kick_stop_right(i8 x, i8 y, i32 frame) const;
     bool can_use_enclosure_kick_stop_down(i8 x, i8 y, i32 frame) const;
+
+    bool can_use_delayed_enclosure_kick_stop_right(i8 x, i8 y, i32 frame) const;
 };

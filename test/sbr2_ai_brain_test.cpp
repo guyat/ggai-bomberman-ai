@@ -47,6 +47,8 @@ std::string action_to_string(SBR2Action action)
         return "KICK_STOP_RIGHT";
     case SBR2Action::KICK_STOP_DOWN:
         return "KICK_STOP_DOWN";
+    case SBR2Action::KICK_STOP_DELAYED_RIGHT:
+        return "KICK_STOP_DELAYED_RIGHT";
     default:
         return "UNKNOWN";
     }
@@ -3426,6 +3428,146 @@ int main()
             std::string detail =
                 "NOTE action=" + action_to_string(action);
             print_case_summary("CASE 61", false, detail);
+        }
+    }
+
+    // CASE 62
+    // enclosure delayed-bomb removal observation
+    // 4個並びのうち1個を外すと安全になるイメージの観測ケース
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        // 自分位置は (4, 10)
+        //
+        // 横方向に 2マス間隔の爆弾列:
+        // (1,8) BOMB
+        // (3,8) BOMB
+        // (5,8) BOMB   ← 将来的にはこのあたりを「最遅候補」として扱いたい
+        // (7,8) BOMB
+        //
+        // 今回はまだ時刻差を持たせない。
+        // まずは「この4個並びを観測ケースとして固定」する。
+        //
+        // 既存の KICK_STOP_LEFT / RIGHT に誤認されないように、
+        // 自分は列の真横ではなく少し下に置く。
+        board.set_cell(1, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(3, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(5, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(7, 8, SBR2Board::CellType::BOMB);
+
+        // 周囲を少し制限
+        board.set_cell(3, 10, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(5, 10, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(4, 9, SBR2Board::CellType::HARD_BLOCK);
+
+        // 敵は遠く
+        board.set_enemy_position(12, 0);
+
+        print_separator();
+        std::cout << "CASE 62: enclosure delayed-bomb removal observation\n";
+
+        std::cout << "debug bomb(1,8) = " << (board.is_bomb(1, 8) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(3,8) = " << (board.is_bomb(3, 8) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(5,8) = " << (board.is_bomb(5, 8) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(7,8) = " << (board.is_bomb(7, 8) ? "1" : "0") << "\n";
+        std::cout << "debug left_blocked(3,10) = " << (!board.is_passable(3, 10) ? "1" : "0") << "\n";
+        std::cout << "debug right_blocked(5,10) = " << (!board.is_passable(5, 10) ? "1" : "0") << "\n";
+        std::cout << "debug up_blocked(4,9) = " << (!board.is_passable(4, 9) ? "1" : "0") << "\n";
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(4, 10, 138);
+
+        std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "reason = " << g_last_bomb_reason << "\n";
+        }
+
+        print_case_summary("CASE 62", false, "NOTE observation only");
+    }
+
+    // CASE 63
+    // enclosure delayed-bomb target observation
+    // 4個並びの中で「この爆弾を外したい」という候補を明示する観測ケース
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        // 自分位置は (4, 10)
+        //
+        // 横方向に 2マス間隔の爆弾列:
+        // (1,8) BOMB
+        // (3,8) BOMB
+        // (5,8) BOMB   ← 将来的に「最遅候補」として外したい想定
+        // (7,8) BOMB
+        //
+        // 今はまだ時刻差そのものは実装しない。
+        // まずは「外したい候補が (5,8) である」ことを
+        // テストケース上で明示して固定する。
+        board.set_cell(1, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(3, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(5, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(7, 8, SBR2Board::CellType::BOMB);
+
+        // 周囲制限
+        board.set_cell(3, 10, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(5, 10, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(4, 9, SBR2Board::CellType::HARD_BLOCK);
+
+        board.set_enemy_position(12, 0);
+
+        print_separator();
+        std::cout << "CASE 63: enclosure delayed-bomb target observation\n";
+
+        std::cout << "debug bomb(1,8) = " << (board.is_bomb(1, 8) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(3,8) = " << (board.is_bomb(3, 8) ? "1" : "0") << "\n";
+        std::cout << "debug target bomb(5,8) = " << (board.is_bomb(5, 8) ? "1" : "0") << "\n";
+        std::cout << "debug bomb(7,8) = " << (board.is_bomb(7, 8) ? "1" : "0") << "\n";
+        std::cout << "debug left_blocked(3,10) = " << (!board.is_passable(3, 10) ? "1" : "0") << "\n";
+        std::cout << "debug right_blocked(5,10) = " << (!board.is_passable(5, 10) ? "1" : "0") << "\n";
+        std::cout << "debug up_blocked(4,9) = " << (!board.is_passable(4, 9) ? "1" : "0") << "\n";
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(4, 10, 138);
+
+        std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "reason = " << g_last_bomb_reason << "\n";
+        }
+
+        bool ok63 = (action == SBR2Action::KICK_STOP_DELAYED_RIGHT);
+
+        if (ok63)
+        {
+            print_case_summary("CASE 63", true);
+        }
+        else
+        {
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 63", false, detail);
         }
     }
 

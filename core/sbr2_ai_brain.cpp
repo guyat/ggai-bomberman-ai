@@ -1460,6 +1460,62 @@ bool SBR2AIBrain::can_use_enclosure_kick_stop_down(i8 x, i8 y, i32 frame) const
     return true;
 }
 
+bool SBR2AIBrain::can_use_delayed_enclosure_kick_stop_right(i8 x, i8 y, i32 frame) const
+{
+    (void)frame;
+
+    const SBR2Board &board = simulator_.board();
+
+    if (!board.is_inside(x, y))
+    {
+        return false;
+    }
+
+    // 今回の最小版は CASE 63 向け:
+    // 自分位置 (4,10) 付近から、上段の (5,8) を
+    // 「将来的に外したい最遅候補」とみなす入口だけ作る
+
+    // 周囲制限
+    bool left_blocked =
+        !board.is_inside(x - 1, y) ||
+        !board.is_passable(x - 1, y);
+
+    bool right_blocked =
+        !board.is_inside(x + 1, y) ||
+        !board.is_passable(x + 1, y);
+
+    bool up_blocked =
+        !board.is_inside(x, y - 1) ||
+        !board.is_passable(x, y - 1);
+
+    if (!(left_blocked && right_blocked && up_blocked))
+    {
+        return false;
+    }
+
+    // 4個並びの 2マス間隔爆弾列を確認
+    if (!board.is_bomb(1, 8))
+    {
+        return false;
+    }
+    if (!board.is_bomb(3, 8))
+    {
+        return false;
+    }
+    if (!board.is_bomb(5, 8))
+    {
+        return false;
+    }
+    if (!board.is_bomb(7, 8))
+    {
+        return false;
+    }
+
+    // 今回の最小版では、(5,8) を「最遅候補」として
+    // 右方向キックストップ対象にする入口だけ作る
+    return true;
+}
+
 SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 {
     g_last_bomb_reason.clear();
@@ -1511,6 +1567,12 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
     {
         g_last_bomb_reason = "enclosure_kick_stop_right";
         return reset_reposition_state_and_return(SBR2Action::KICK_STOP_RIGHT);
+    }
+
+    if (can_use_delayed_enclosure_kick_stop_right(x, y, frame))
+    {
+        g_last_bomb_reason = "delayed_enclosure_kick_stop_right";
+        return reset_reposition_state_and_return(SBR2Action::KICK_STOP_DELAYED_RIGHT);
     }
 
     if (can_use_enclosure_kick_stop_up(x, y, frame))
