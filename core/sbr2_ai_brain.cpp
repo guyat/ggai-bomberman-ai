@@ -715,6 +715,15 @@ bool SBR2AIBrain::can_use_surrounded_punch_escape_right(i8 x, i8 y, i32 frame) c
         return false;
     }
 
+    // 裏パンチ回避:
+    // 右隣の爆弾が端、または端の1マス前なら
+    // 右パンチで裏側へ飛ばせる想定なので優先してパンチ候補にする
+    const i8 right_bomb_x = x + 1;
+    if (right_bomb_x >= SBR2Board::WIDTH - 2)
+    {
+        return true;
+    }
+
     // 条件1:
     // 右に爆弾が2個以上連なっている
     if (board.is_bomb(x + 2, y))

@@ -3571,6 +3571,124 @@ int main()
         }
     }
 
+    // CASE 64
+    // edge-near punch wrap observation
+    // 端より1マス前の爆弾を右パンチすると裏側へ飛ぶ想定の観測ケース
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        // 自分位置は (10, 0)
+        // 右隣 (11,0) に爆弾
+        // そのさらに右 (12,0) は端側
+        // 上: 外周
+        // 左: HARD_BLOCK
+        // 下: HARD_BLOCK
+        board.set_cell(11, 0, SBR2Board::CellType::BOMB);
+        board.set_cell(9, 0, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(10, 1, SBR2Board::CellType::HARD_BLOCK);
+
+        board.set_enemy_position(0, 10);
+
+        print_separator();
+        std::cout << "CASE 64: edge-near punch wrap observation\n";
+
+        std::cout << "debug bomb(11,0) = " << (board.is_bomb(11, 0) ? "1" : "0") << "\n";
+        std::cout << "debug left_blocked(9,0) = " << (!board.is_passable(9, 0) ? "1" : "0") << "\n";
+        std::cout << "debug down_blocked(10,1) = " << (!board.is_passable(10, 1) ? "1" : "0") << "\n";
+        std::cout << "debug edge_cell(12,0)_passable = " << (board.is_passable(12, 0) ? "1" : "0") << "\n";
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(10, 0, 138);
+
+        std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "reason = " << g_last_bomb_reason << "\n";
+        }
+
+        bool ok64 = (action == SBR2Action::PUNCH_RIGHT);
+
+        if (ok64)
+        {
+            print_case_summary("CASE 64", true);
+        }
+        else
+        {
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 64", false, detail);
+        }
+    }
+
+    // CASE 65
+    // edge punch wrap observation
+    // 端そのものの爆弾を右パンチすると裏側へ飛ぶ想定の観測ケース
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        // 自分位置は (11, 0)
+        // 右隣 (12,0) に爆弾
+        // 上: 外周
+        // 左: HARD_BLOCK
+        // 下: HARD_BLOCK
+        board.set_cell(12, 0, SBR2Board::CellType::BOMB);
+        board.set_cell(10, 0, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(11, 1, SBR2Board::CellType::HARD_BLOCK);
+
+        board.set_enemy_position(0, 10);
+
+        print_separator();
+        std::cout << "CASE 65: edge punch wrap observation\n";
+
+        std::cout << "debug bomb(12,0) = " << (board.is_bomb(12, 0) ? "1" : "0") << "\n";
+        std::cout << "debug left_blocked(10,0) = " << (!board.is_passable(10, 0) ? "1" : "0") << "\n";
+        std::cout << "debug down_blocked(11,1) = " << (!board.is_passable(11, 1) ? "1" : "0") << "\n";
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings settings;
+        settings.ai_level = 20;
+        settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain brain(simulator, pathfinder, settings);
+
+        SBR2Action action = brain.decide_next_action(11, 0, 138);
+
+        std::cout << "action = " << action_to_string(action) << "\n";
+        if (!g_last_bomb_reason.empty())
+        {
+            std::cout << "reason = " << g_last_bomb_reason << "\n";
+        }
+
+        bool ok65 = (action == SBR2Action::PUNCH_RIGHT);
+
+        if (ok65)
+        {
+            print_case_summary("CASE 65", true);
+        }
+        else
+        {
+            std::string detail =
+                "NOTE action=" + action_to_string(action);
+            print_case_summary("CASE 65", false, detail);
+        }
+    }
+
     print_separator();
     return 0;
 }
