@@ -1,0 +1,9 @@
+{
+    "ai_attack": 2,
+    "ai_cancel": true,
+    "ai_defense": 0,
+    "ai_max_chain": 7,
+    "ai_speed": 1,
+    "game_player": 1,
+    "game_vs": true
+}
