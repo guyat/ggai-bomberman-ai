@@ -19,24 +19,26 @@ Working Directory:
 
 ---
 
-1. この README.md を最初から読む
-2. 以下のファイルをリポジトリから読む（重要度順）ファイルは直前にGitへコミットしているためローカルとリポジトリのファイル内容は一致しているものとする。
-【最重要（必ず読む）】
-`core/sbr2_ai_brain.cpp`
-`core/sbr2_ai_brain.h`
-`test/sbr2_ai_brain_test.cpp`
+1. この README.md を最初から読む  
+2. 以下のファイルをリポジトリから読む  
+3. その上で README の「現在位置」と「次にやること」から再開する  
 
-【重要（必要に応じて参照）】
-`core/sbr2_board.h`
+### 最重要（必ず読む）
+`core/sbr2_ai_brain.cpp`  
+`core/sbr2_ai_brain.h`  
+`test/sbr2_ai_brain_test.cpp`  
 
-【補助（挙動確認・理解用）】
-`core/sbr2_pathfinder.cpp`
-`core/sbr2_pathfinder.h`
-`core/sbr2_simulator.cpp`
-`core/sbr2_simulator.h`
-`test/sbr2_pathfinder_test.cpp`
-`test/sbr2_simulator_test.cpp`
-3. その上で、README の「現在位置」と「次にやること」から再開する
+### 重要（必要に応じて参照）
+`core/sbr2_board.h`  
+`core/sbr2_pathfinder.cpp`  
+`core/sbr2_pathfinder.h`  
+`core/sbr2_simulator.cpp`  
+`core/sbr2_simulator.h`  
+
+### 参考資料（今回以降かなり重要）
+`original_amaAI/`  
+`reference_runtime/ama_v1_8_2/`  
+`reference_runtime/scp_driver/`  
 
 ---
 
@@ -54,7 +56,7 @@ Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1用AI** を開発す�
 - 爆弾を安全に置く
 - 直線キル・予測攻撃・トラップを行う
 - 将来的には人間上級者らしいテクニックまで扱う
-- 最終的には「強い」だけでなく **人間っぽい** AI にする
+- 最終的には「強い」だけでなく **人間っぽい / 学習用としても価値のある** AI にする
 
 ことである。
 
@@ -69,299 +71,335 @@ Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1用AI** を開発す�
 - コピペしやすい形で出す
 - できるだけ初心者でも迷わないように書く
 - 「この文字列を検索してください」のように、検索しやすい案内を優先する
+- エラーが出たら最優先で修正する
 
+---
 
 # ============================================
-
-# GGAI / SBR2 AI 開発 現在状況まとめ（更新版・2026/03）
-
+# GGAI / SBR2 AI 開発 現在状況まとめ（更新版・2026/03/30）
 # ============================================
 
 ## ■ このREADMEの役割（再確認）
 
-この README は
+この README は  
 👉 **スレ移行しても100%続きから再開するための固定資産**
 
 ---
 
-# ■ 現在位置（このスレ終了時点）
+## ■ 現在位置（このスレ終了時点）
 
-## 🎯 開発フェーズ
-
-### 完了済み（確定）
-
-* 回避AI（危険マス回避）
-* 爆弾設置AI
-* 直線キル
-* guided_bomb
-* guided_trap / guided_trap_v2
-* close_range_pressure
-* checkmate基礎
-* Style差（Aggressive / Careful / Tricky）
-* Level差（Lv5 / Lv20）
-* TrickyのLv制御
-* Carefulの慎重制御
+### 開発フェーズ
+👉 **AIコア + 防御拡張 + level gate 実装完了 / 次は仮想コントローラー接続フェーズ**
 
 ---
 
-## 🧠 今スレでやったこと（超重要）
+## ■ ここまでで完了済み（重要）
 
-### ① 不自然WAIT潰し
+### AIコア
+- 回避AI（危険マス回避）
+- 爆弾設置AI
+- 直線キル
+- guided_bomb
+- guided_trap / guided_trap_v2
+- close_range_pressure
+- checkmate基礎
+- Style差（Aggressive / Careful / Tricky）
+- Level差（Lv5 / Lv20）
+- TrickyのLv制御
+- Carefulの慎重制御
+- 再配置（move_toward_enemy）改善
+- 不自然WAIT潰し
 
-* Aggressive / Tricky が攻められるのに WAIT する問題を検証
-* CASE40〜42で確認
+### 防御拡張
+- 囲われ脱出パンチ 4方向
+  - `PUNCH_RIGHT`
+  - `PUNCH_LEFT`
+  - `PUNCH_UP`
+  - `PUNCH_DOWN`
+- 囲われ脱出キック 4方向
+  - `KICK_RIGHT`
+  - `KICK_LEFT`
+  - `KICK_UP`
+  - `KICK_DOWN`
+- 包囲キックストップ 4方向
+  - `KICK_STOP_UP`
+  - `KICK_STOP_LEFT`
+  - `KICK_STOP_RIGHT`
+  - `KICK_STOP_DOWN`
+- delayed enclosure の最小入口
+  - `KICK_STOP_DELAYED_RIGHT`
+- 右方向の裏パンチ回避
+  - 端の爆弾
+  - 端1マス前の爆弾
+  を `PUNCH_RIGHT` 候補として扱う最小版
 
-👉 結論
-**致命的な不自然WAITはなし（現状OK）**
+### level gate
+- 脱出技（パンチ + キック）: **Lv10以上**
+- 包囲キックストップ: **Lv15以上**
+- delayed enclosure: **Lv18以上**
 
----
-
-### ② 再配置（move_toward_enemy）改善
-
-#### 問題
-
-* 上下往復（UP/DOWNループ）
-* 横に寄らない
-* 壁に擦る可能性
-
-#### 対応
-
-### ✔ 横優先ロジック修正
-
-```cpp
-abs(dy) > abs(dx) のときのみ縦上書き
-```
-
-👉 横に寄れるようになった
-
----
-
-### ✔ fallback改善
-
-* 「通れるだけ」→「敵に近づく方向」へ変更
-* 同点時は直前方向優先
-
-👉 無意味な往復削減
-
----
-
-### ✔ 逆方向抑制
-
-```cpp
-reverse_of_last
-```
-
-👉 UP⇔DOWN往復を抑制
-
----
-
-### ✔ 近距離揺れ制御
-
-* 近距離（距離3以下）でswap抑制
+### 参考資料整理
+- `original_amaAI/` を repo 内に復元済み
+- `reference_runtime/ama_v1_8_2/` を追加済み
+- `reference_runtime/scp_driver/` を追加済み
 
 ---
 
-### ✔ 行き過ぎ防止
+## ■ 今スレでやったこと（超重要）
 
-* 同じ列・行での overshoot 抑制
+### ① 防御拡張フェーズを進めた
+「爆弾に挟まれたときのパンチ・キック脱出」を中心に実装。
 
----
+#### 囲われ脱出パンチ
+- CASE 50: `PUNCH_RIGHT`
+- CASE 51: `PUNCH_LEFT`
+- CASE 52: `PUNCH_UP`
+- CASE 53: `PUNCH_DOWN`
 
-## 🎯 結果（最重要）
+#### 囲われ脱出キック
+- CASE 54: `KICK_RIGHT`
+- CASE 55: `KICK_LEFT`
+- CASE 56: `KICK_UP`
+- CASE 57: `KICK_DOWN`
 
-### CASE48 / CASE49（最終確認）
+#### 包囲キックストップ
+- CASE 58: `KICK_STOP_UP`
+- CASE 59: `KICK_STOP_LEFT`
+- CASE 60: `KICK_STOP_RIGHT`
+- CASE 61: `KICK_STOP_DOWN`
 
-👉 追従結果
+#### delayed enclosure 最小入口
+- CASE 62: 4個並び包囲観測ケース（誤発動しない WAIT 観測）
+- CASE 63: `KICK_STOP_DELAYED_RIGHT`
 
-* 横方向へ自然に寄る
-* 壁に擦らない
-* 無意味な往復なし
-* 敵付近で自然停止
-
-👉 結論
-
-**再配置ロジックは実用レベルに到達**
-
----
-
-# ■ 現在のAI構造
-
-## 基本構造
-
-* style → 行動方針
-* level → 行動解放
-
----
-
-## Aggressive
-
-* 攻撃重視
-* close_range_pressure
-* straight_kill
-* guided_bomb
+#### 裏パンチ回避
+- CASE 64: 端1マス前の爆弾 → `PUNCH_RIGHT`
+- CASE 65: 端そのものの爆弾 → `PUNCH_RIGHT`
 
 ---
 
-## Careful
+### ② level gate を実装した
+#### gate 設定
+- 脱出技（パンチ + キック）: **Lv10以上**
+- 包囲キックストップ: **Lv15以上**
+- delayed enclosure: **Lv18以上**
 
-* 慎重
-* 斜め基本WAIT
-* 一直線のみ限定攻撃
+#### 観測ケース
+- CASE 50-LV
+  - Lv9 では脱出技を使わない
+  - Lv20 では `PUNCH_RIGHT`
+- CASE 63-LV
+  - Lv17 では delayed enclosure を使わない
+  - Lv20 では `KICK_STOP_DELAYED_RIGHT`
 
 ---
 
-## Tricky
+### ③ amaAI と scp_driver の参考資料を調査した
+#### 調査結果
+- `original_amaAI/puyop/encode.h`
+- `original_amaAI/puyop/main.cpp`
+- `original_amaAI/core/fieldbit.cpp`
+- `original_amaAI/ai/search/beam/eval.cpp`
+- `original_amaAI/ai/gaze.cpp`
 
-* 誘導・罠
-* guided_trap_v2
-* 直線キル抑制
+を確認したが、**仮想コントローラー接続コードは見当たらなかった**。
+
+#### 現時点の判断
+- 公開されている `original_amaAI` からは  
+  **scp_driver への接続コードを直接は参考にできない可能性が高い**
+- `reference_runtime/scp_driver/` 内のファイルは
+  - `.dll`
+  - `.inf`
+  - `.cat`
+  - `.sys`
+  であり、**接続コードそのものではなくランタイム / ドライバ本体** と考えるのが自然
+- よって、次フェーズは  
+  **GGAI 用の最小仮想コントローラー接続層を自作する方針**  
+  で進める
 
 ---
 
-# ■ ステージ仕様（再確認）
+## ■ 現在のAI構造（重要）
 
-* サイズ：13 × 11
-* 左上：(0,0)
-* ハードブロック：
+### 基本構造
+- style → 行動方針
+- level → 行動解放
+- escape / enclosure / delayed enclosure → 防御技解放
 
+### Aggressive
+- 攻撃重視
+- close_range_pressure
+- straight_kill
+- guided_bomb
+- 脱出技 / 包囲外しも level に応じて使用
+
+### Careful
+- 慎重
+- 斜め基本WAIT
+- 一直線のみ限定攻撃
+
+### Tricky
+- 誘導・罠
+- guided_trap_v2
+- 直線キル抑制
+
+---
+
+## ■ ステージ仕様（再確認）
+
+- サイズ：13 × 11
+- 左上：(0,0)
+- ハードブロック：
 ```cpp
 (x % 2 == 1 && y % 2 == 1)
 ```
 
-## ⚠ テスト注意（最重要）
-
-* ハードブロックに立たせない
-* (5,5), (7,7) NG
-
----
-
-# ■ 現在の完成度
-
-| 項目      | 状態   |
-| ------- | ---- |
-| style差  | 完成   |
-| level差  | 完成   |
-| 攻撃AI    | 実用   |
-| 再配置     | 実用   |
-| 不自然WAIT | 問題なし |
-| 安定性     | 高い   |
-
-👉 **AIコアは完成段階に到達**
+### テスト注意（最重要）
+- ハードブロックに立たせない
+- 盤面配置は `core/sbr2_board.h` の仕様に合わせること
 
 ---
 
-# ■ 次にやること（次スレ開始点）
+## ■ 爆弾・テクニック仕様メモ（今後重要）
 
-## 🎯 フェーズ
+### パンチ
+- 基本は **3マス先** へ飛ぶ
+- ただし端付近の特殊仕様あり
+- **端から3マス目の爆弾**は **2マスしか飛ばない**
+- 端、端1マス前の爆弾は **裏パンチ回避** の候補
 
-👉 **実戦対応フェーズへ移行**
+### 投げ
+- 基本は **5マス先** へ飛ぶ
+- ただし端付近の特殊仕様あり
+- **端から5マス目から投げると、裏へ行かず外周の壁端にぴったり着弾**
+- ハードブロック経由で相手に飛ばしてピヨらせる
+  **同ライン通路投げピヨらせ** は将来実装予定
 
----
-
-## ■ 次にやること（最優先）
-
-### ① 実戦挙動確認
-
-* 細かい違和感の洗い出し
-* 微調整
-
----
-
-### ② 防御拡張（重要）
-
-👉 ここからが次の主軸
-
-#### 追加予定
-
-* 爆弾挟まれ時の脱出
-
-  * パンチ脱出
-  * キック脱出
-
-#### 位置づけ
-
-```
-通常回避
-↓
-無理なら
-↓
-盤面操作で脱出（NEW）
-```
-
-👉 ギンギンパワーにおいて最重要防御
+### 包囲外し
+- 2マス間隔で並んだ爆弾列から
+  **最遅の爆弾（または遅めの爆弾）を1マスキックストップで外し、残りを先に爆発させて安全化する**
+  という理解で進める
+- 現在は delayed enclosure の**最小入口のみ**実装済み
+- 3個 / 5個 / 6個…への一般化は **未実装**
 
 ---
 
-### ③ 上級テクニック拡張
-
-今後追加予定：
+## ■ 上級テク土台（settings 側）
+`sbr2_ai_brain.h` の `SBR2AIBrainSettings` には、将来実装用のフラグ土台がある。
 
 ```cpp
-bool enable_bomb_tail = false;
-bool enable_throw_chain = false;
-bool enable_punch_chain = false;
-bool enable_kick_chain = false;
-bool enable_double_place_punch = false;
-bool enable_throw_death_scythe = false;
-bool enable_punch_death_scythe = false;
-bool enable_kick_death_scythe = false;
-bool enable_exploding_punch = false;
-bool enable_right_timing_exploding_punch = false;
+    bool enable_bomb_tail = false; // ボムテイル
+    bool enable_punch_stun = false; // パンチピヨらせ
+    bool enable_corridor_stun_throw = false; // 同ライン通路投げピヨらせ
+    bool enable_throw_chain = false; // 投げ誘爆
+    bool enable_punch_chain = false; // パンチ誘爆
+    bool enable_kick_chain = false; // 蹴り誘爆
+    bool enable_double_place_punch = false; // 2個置きパンチ
+    bool enable_throw_death_scythe = false; // 投げデスサイズ
+    bool enable_punch_death_scythe = false; // パンチデスサイズ
+    bool enable_kick_death_scythe = false; // 蹴りデスサイズ
+    bool enable_exploding_punch = false; // 起爆パンチ
+    bool enable_right_timing_exploding_punch = false; // 目押し起爆パンチ
 ```
 
-👉 **チェックボックス形式でON/OFF可能にする**
+---
+
+## ■ 現在の完成度
+
+| 項目 | 状態 |
+| --- | --- |
+| AIコア | 実用レベル |
+| 回避AI | 実用レベル |
+| 攻撃AI | 実用レベル |
+| 再配置 | 実用レベル |
+| 囲われ脱出 | 実装済み |
+| 包囲キックストップ | 実装済み |
+| delayed enclosure | 最小入口のみ |
+| level gate | 実装済み |
+| 仮想コントローラー接続 | **未実装** |
+
+👉 **AIコア + 防御拡張はかなり前進。次の最大の山は仮想コントローラー接続。**
 
 ---
 
-### ④ scp_driver接続準備
+## ■ 次にやること（次スレ開始点）
 
-* 仮想コントローラー操作
-* 実機テストへ移行
+### 最優先
+👉 **GGAI 用の最小仮想コントローラー接続設計 / 実装**
+
+### 方針
+amaAI の公開ソースから接続コードを拾う前提は一旦やめ、  
+**GGAI 用に最小の接続層を自作する** 方針で進める。
+
+### 最初の目標
+1. 仮想コントローラー初期化の入口を作る  
+2. 固定入力だけ送れるか確認する  
+   - `WAIT`
+   - `RIGHT`
+   - `PLACE_BOMB`
+3. `SBR2Action` を入力へ変換する層を作る  
+4. そのあと AI Brain とつなぐ  
+
+### 仮想コントローラー接続で参照するもの
+- `original_amaAI/`
+- `reference_runtime/ama_v1_8_2/`
+- `reference_runtime/scp_driver/`
+
+### ただし現時点の判断
+- 公開されている `original_amaAI` からは、接続コードが見つからない可能性が高い
+- なので **参考資料としては参照するが、接続層そのものは自作前提** で進める
 
 ---
 
-# ■ 開発方針（次スレ）
-
-* 大規模変更禁止
-* 小さい修正のみ
-* 必ずテストで確認
-* コピペ形式で指示
+## ■ 開発方針（次スレ）
+- 大規模変更禁止
+- 小さい修正のみ
+- 必ずテストで確認
+- コピペ形式で指示
+- エラーは最優先修正
+- 仮想コントローラー接続は、まず**最小の固定入力確認**から始める
 
 ---
 
-# ■ 次スレ開始テンプレ（必須）
+## ■ 次スレ開始テンプレ（必須）
 
-このプロジェクトの続きです。
+このプロジェクトの続きです。  
 README.mdとコードを読んで現状整理してください。
 
-GitHub:
+GitHub:  
 https://github.com/guyat/ggai-bomberman-ai
 
-作業ディレクトリ:
+作業ディレクトリ:  
 `/c/Users/PC_User/Documents/GGAI/ggai`
 
 読むファイル:
+- `README.md`
+- `core/sbr2_ai_brain.cpp`
+- `core/sbr2_ai_brain.h`
+- `core/sbr2_board.h`
+- `test/sbr2_ai_brain_test.cpp`
 
-* core/sbr2_ai_brain.cpp
-* core/sbr2_ai_brain.h
-* core/sbr2_board.h
-* test/sbr2_ai_brain_test.cpp
+参考資料:
+- `original_amaAI/`
+- `reference_runtime/ama_v1_8_2/`
+- `reference_runtime/scp_driver/`
 
 重要:
-
-* いきなりコードを書かない
-* まず現状整理
-* 小さい変更のみ
-* コピペ形式で指示
-* エラーは最優先修正
-
----
-
-# ■ 現在の最重要ポイント（まとめ）
-
-👉 AIコアは完成レベル
-👉 次は「防御拡張」と「実機対応」
+- いきなりコードを書かない
+- まず現状整理
+- 次にやることは **GGAI 用の最小仮想コントローラー接続設計**
+- 小さい変更のみ
+- コピペ形式で指示
+- エラーは最優先修正
 
 ---
+
+## ■ 現在の最重要ポイント（まとめ）
+
+👉 AIコアはかなり進んだ  
+👉 防御拡張もかなり進んだ  
+👉 amaAI 公開ソースから接続コードをそのまま拾うのは難しそう  
+👉 次の最大の山は **仮想コントローラー接続と実動作確認**  
+👉 まずは **GGAI 用の最小接続層** を作る
 
 # ============================================
