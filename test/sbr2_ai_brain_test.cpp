@@ -3689,6 +3689,102 @@ int main()
         }
     }
 
+    // CASE 50-LV
+    // surrounded escape level gate observation
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        board.set_cell(1, 0, SBR2Board::CellType::BOMB);
+        board.set_cell(3, 0, SBR2Board::CellType::BOMB);
+        board.set_cell(4, 0, SBR2Board::CellType::BOMB);
+        board.set_cell(2, 1, SBR2Board::CellType::BOMB);
+
+        board.set_enemy_position(12, 10);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings low_settings;
+        low_settings.ai_level = 9;
+        low_settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrainSettings high_settings;
+        high_settings.ai_level = 20;
+        high_settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain low_brain(simulator, pathfinder, low_settings);
+        SBR2AIBrain high_brain(simulator, pathfinder, high_settings);
+
+        print_separator();
+        std::cout << "CASE 50-LV: surrounded escape level gate observation\n";
+
+        SBR2Action low_action = low_brain.decide_next_action(2, 0, 138);
+        std::string low_reason = g_last_bomb_reason;
+
+        SBR2Action high_action = high_brain.decide_next_action(2, 0, 138);
+        std::string high_reason = g_last_bomb_reason;
+
+        std::cout << "Lv9  action = " << action_to_string(low_action) << "\n";
+        std::cout << "Lv9  reason = " << (low_reason.empty() ? "(empty)" : low_reason) << "\n";
+        std::cout << "Lv20 action = " << action_to_string(high_action) << "\n";
+        std::cout << "Lv20 reason = " << (high_reason.empty() ? "(empty)" : high_reason) << "\n";
+
+        print_case_summary("CASE 50-LV", false, "NOTE observation only");
+    }
+
+    // CASE 63-LV
+    // delayed enclosure level gate observation
+    {
+        SBR2Simulator simulator;
+        simulator.clear();
+        simulator.simulate();
+
+        SBR2Board &board = const_cast<SBR2Board &>(simulator.board());
+
+        board.set_cell(1, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(3, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(5, 8, SBR2Board::CellType::BOMB);
+        board.set_cell(7, 8, SBR2Board::CellType::BOMB);
+
+        board.set_cell(3, 10, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(5, 10, SBR2Board::CellType::HARD_BLOCK);
+        board.set_cell(4, 9, SBR2Board::CellType::HARD_BLOCK);
+
+        board.set_enemy_position(12, 0);
+
+        SBR2PathFinder pathfinder(board, simulator);
+
+        SBR2AIBrainSettings low_settings;
+        low_settings.ai_level = 17;
+        low_settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrainSettings high_settings;
+        high_settings.ai_level = 20;
+        high_settings.style = SBR2AIStyle::Aggressive;
+
+        SBR2AIBrain low_brain(simulator, pathfinder, low_settings);
+        SBR2AIBrain high_brain(simulator, pathfinder, high_settings);
+
+        print_separator();
+        std::cout << "CASE 63-LV: delayed enclosure level gate observation\n";
+
+        SBR2Action low_action = low_brain.decide_next_action(4, 10, 138);
+        std::string low_reason = g_last_bomb_reason;
+
+        SBR2Action high_action = high_brain.decide_next_action(4, 10, 138);
+        std::string high_reason = g_last_bomb_reason;
+
+        std::cout << "Lv17 action = " << action_to_string(low_action) << "\n";
+        std::cout << "Lv17 reason = " << (low_reason.empty() ? "(empty)" : low_reason) << "\n";
+        std::cout << "Lv20 action = " << action_to_string(high_action) << "\n";
+        std::cout << "Lv20 reason = " << (high_reason.empty() ? "(empty)" : high_reason) << "\n";
+
+        print_case_summary("CASE 63-LV", false, "NOTE observation only");
+    }
+
     print_separator();
     return 0;
 }

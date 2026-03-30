@@ -98,6 +98,21 @@ bool SBR2AIBrain::level_allows_trap() const
     return normalized_ai_level() >= 15;
 }
 
+bool SBR2AIBrain::level_allows_surrounded_escape() const
+{
+    return normalized_ai_level() >= 10;
+}
+
+bool SBR2AIBrain::level_allows_enclosure_kick_stop() const
+{
+    return normalized_ai_level() >= 15;
+}
+
+bool SBR2AIBrain::level_allows_delayed_enclosure_escape() const
+{
+    return normalized_ai_level() >= 18;
+}
+
 int SBR2AIBrain::trap_survivable_cell_threshold() const
 {
     int level = normalized_ai_level();
@@ -1530,79 +1545,79 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
     g_last_bomb_reason.clear();
     SBR2EscapeResult result{};
 
-    if (can_use_surrounded_punch_escape_right(x, y, frame))
+    if (level_allows_surrounded_escape() && can_use_surrounded_punch_escape_right(x, y, frame))
     {
         g_last_bomb_reason = "surrounded_punch_escape_right";
         return reset_reposition_state_and_return(SBR2Action::PUNCH_RIGHT);
     }
 
-    if (can_use_surrounded_punch_escape_left(x, y, frame))
+    if (level_allows_surrounded_escape() && can_use_surrounded_punch_escape_left(x, y, frame))
     {
         g_last_bomb_reason = "surrounded_punch_escape_left";
         return reset_reposition_state_and_return(SBR2Action::PUNCH_LEFT);
     }
 
-    if (can_use_surrounded_punch_escape_up(x, y, frame))
+    if (level_allows_surrounded_escape() && can_use_surrounded_punch_escape_up(x, y, frame))
     {
         g_last_bomb_reason = "surrounded_punch_escape_up";
         return reset_reposition_state_and_return(SBR2Action::PUNCH_UP);
     }
 
-    if (can_use_surrounded_punch_escape_down(x, y, frame))
+    if (level_allows_surrounded_escape() && can_use_surrounded_punch_escape_down(x, y, frame))
     {
         g_last_bomb_reason = "surrounded_punch_escape_down";
         return reset_reposition_state_and_return(SBR2Action::PUNCH_DOWN);
     }
 
-    if (can_use_surrounded_kick_escape_right(x, y, frame))
+    if (level_allows_surrounded_escape() && can_use_surrounded_kick_escape_right(x, y, frame))
     {
         g_last_bomb_reason = "surrounded_kick_escape_right";
         return reset_reposition_state_and_return(SBR2Action::KICK_RIGHT);
     }
 
-    if (can_use_surrounded_kick_escape_left(x, y, frame))
+    if (level_allows_surrounded_escape() && can_use_surrounded_kick_escape_left(x, y, frame))
     {
         g_last_bomb_reason = "surrounded_kick_escape_left";
         return reset_reposition_state_and_return(SBR2Action::KICK_LEFT);
     }
 
-    if (can_use_enclosure_kick_stop_left(x, y, frame))
+    if (level_allows_enclosure_kick_stop() && can_use_enclosure_kick_stop_left(x, y, frame))
     {
         g_last_bomb_reason = "enclosure_kick_stop_left";
         return reset_reposition_state_and_return(SBR2Action::KICK_STOP_LEFT);
     }
 
-    if (can_use_enclosure_kick_stop_right(x, y, frame))
+    if (level_allows_enclosure_kick_stop() && can_use_enclosure_kick_stop_right(x, y, frame))
     {
         g_last_bomb_reason = "enclosure_kick_stop_right";
         return reset_reposition_state_and_return(SBR2Action::KICK_STOP_RIGHT);
     }
 
-    if (can_use_delayed_enclosure_kick_stop_right(x, y, frame))
+    if (level_allows_delayed_enclosure_escape() && can_use_delayed_enclosure_kick_stop_right(x, y, frame))
     {
         g_last_bomb_reason = "delayed_enclosure_kick_stop_right";
         return reset_reposition_state_and_return(SBR2Action::KICK_STOP_DELAYED_RIGHT);
     }
 
-    if (can_use_enclosure_kick_stop_up(x, y, frame))
+    if (level_allows_enclosure_kick_stop() && can_use_enclosure_kick_stop_up(x, y, frame))
     {
         g_last_bomb_reason = "enclosure_kick_stop_up";
         return reset_reposition_state_and_return(SBR2Action::KICK_STOP_UP);
     }
 
-    if (can_use_surrounded_kick_escape_up(x, y, frame))
+    if (level_allows_surrounded_escape() && can_use_surrounded_kick_escape_up(x, y, frame))
     {
         g_last_bomb_reason = "surrounded_kick_escape_up";
         return reset_reposition_state_and_return(SBR2Action::KICK_UP);
     }
 
-    if (can_use_enclosure_kick_stop_down(x, y, frame))
+    if (level_allows_enclosure_kick_stop() && can_use_enclosure_kick_stop_down(x, y, frame))
     {
         g_last_bomb_reason = "enclosure_kick_stop_down";
         return reset_reposition_state_and_return(SBR2Action::KICK_STOP_DOWN);
     }
 
-    if (can_use_surrounded_kick_escape_down(x, y, frame))
+    if (level_allows_surrounded_escape() && can_use_surrounded_kick_escape_down(x, y, frame))
     {
         g_last_bomb_reason = "surrounded_kick_escape_down";
         return reset_reposition_state_and_return(SBR2Action::KICK_DOWN);
@@ -1622,7 +1637,8 @@ SBR2Action SBR2AIBrain::decide_next_action(i8 x, i8 y, i32 frame) const
 
         // 囲われ脱出（最小版）
         // まずは右方向パンチだけ対応
-        if (can_use_surrounded_punch_escape_right(x, y, frame))
+        if (level_allows_surrounded_escape() &&
+            can_use_surrounded_punch_escape_right(x, y, frame))
         {
             g_last_bomb_reason = "surrounded_punch_escape_right";
             return reset_reposition_state_and_return(SBR2Action::PUNCH_RIGHT);
