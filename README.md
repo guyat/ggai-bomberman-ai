@@ -39,6 +39,9 @@ Working Directory:
 `original_amaAI/`  
 `reference_runtime/ama_v1_8_2/`  
 `reference_runtime/scp_driver/`  
+`core/sbr2_virtual_pad.h`  
+`core/sbr2_virtual_pad.cpp`  
+`test/sbr2_virtual_pad_test.cpp`  
 
 ---
 
@@ -76,7 +79,7 @@ Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1用AI** を開発す�
 ---
 
 # ============================================
-# GGAI / SBR2 AI 開発 現在状況まとめ（更新版・2026/03/30）
+# GGAI / SBR2 AI 開発 現在状況まとめ（更新版・2026/04/01）
 # ============================================
 
 ## ■ このREADMEの役割（再確認）
@@ -89,7 +92,7 @@ Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1用AI** を開発す�
 ## ■ 現在位置（このスレ終了時点）
 
 ### 開発フェーズ
-👉 **AIコア + 防御拡張 + level gate 実装完了 / 次は仮想コントローラー接続フェーズ**
+👉 **AIコア + 防御拡張 + level gate 実装完了 / 仮想コントローラー接続と最小入力確認は成功 / 次は AI と仮想入力層の接続フェーズ**
 
 ---
 
@@ -142,6 +145,11 @@ Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1用AI** を開発す�
 - `original_amaAI/` を repo 内に復元済み
 - `reference_runtime/ama_v1_8_2/` を追加済み
 - `reference_runtime/scp_driver/` を追加済み
+
+### 仮想コントローラー最小接続層
+- `core/sbr2_virtual_pad.h` を追加済み
+- `core/sbr2_virtual_pad.cpp` を追加済み
+- `test/sbr2_virtual_pad_test.cpp` を追加済み
 
 ---
 
@@ -216,6 +224,58 @@ Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1用AI** を開発す�
 - よって、次フェーズは  
   **GGAI 用の最小仮想コントローラー接続層を自作する方針**  
   で進める
+
+---
+
+### ④ 仮想コントローラー接続の最小確認に成功（今回の最大成果）
+
+#### C# 側（ScpDriverInterface）
+- `PlugIn(1)` による仮想 Xbox 360 コントローラー接続成功
+- `Report()` による入力送信成功
+- `Unplug(1)` による切断成功
+
+#### 確認した入力
+- `neutral`
+- `RIGHT`
+- `A button`
+
+#### OS 側で確認したこと
+- `joy.cpl`（Windows の「ゲーム コントローラー」）で認識
+- ボタン ON / OFF の反応確認
+- 方向入力 ON / OFF の反応確認
+- 接続音 / 切断音の確認
+
+#### 結論
+- **SCP Virtual Bus Driver を user-mode から操作可能**
+- **仮想入力によるゲーム操作は実現可能**
+
+---
+
+### ⑤ C++ 側でも SCP 接続・入力送信の最小確認に成功
+
+#### 新規追加ファイル
+- `core/sbr2_virtual_pad.h`
+- `core/sbr2_virtual_pad.cpp`
+- `test/sbr2_virtual_pad_test.cpp`
+
+#### 実装内容
+- SetupDi + CreateFile によるデバイス取得
+- DeviceIoControl による
+  - `PlugIn`
+  - `Report`
+  - `Unplug`
+
+#### C++ テスト結果
+- `connect ok`
+- `send_neutral ok`
+- `send_right ok`
+- `send_bomb ok`
+- `release_all ok`
+- `disconnect done`
+
+#### 現在の位置づけ
+- C++ 側の最小接続層は **最小動作確認成功**
+- ただし **GGAI 本体（AI Brain / action 決定）とは未接続**
 
 ---
 
@@ -304,6 +364,20 @@ Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1用AI** を開発す�
 
 ---
 
+## ■ 仮想コントローラーに関する注意（重要）
+
+- SCP は公式配布元が統一されていない
+- 特定の zip 配布物に依存しない
+- GGAI はドライバ本体を同梱しない
+- 各自で導入する前提で進める
+
+### 導入済みとみなす最低条件
+- `PlugIn / Unplug` が成功する
+- `joy.cpl` で仮想 Xbox 360 コントローラーが認識される
+- ボタンまたは方向入力に反応がある
+
+---
+
 ## ■ 現在の完成度
 
 | 項目 | 状態 |
@@ -316,38 +390,41 @@ Steam版（PC版）**Super Bomberman R2 (SBR2)** の **1vs1用AI** を開発す�
 | 包囲キックストップ | 実装済み |
 | delayed enclosure | 最小入口のみ |
 | level gate | 実装済み |
-| 仮想コントローラー接続 | **未実装** |
+| 仮想コントローラー接続 | **C++ で最小動作確認済み（GGAI 未接続）** |
 
-👉 **AIコア + 防御拡張はかなり前進。次の最大の山は仮想コントローラー接続。**
+👉 **AIコア + 防御拡張はかなり前進。仮想コントローラー接続と最小入力確認も成功。次の最大の山は AI と仮想入力層の接続。**
 
 ---
 
 ## ■ 次にやること（次スレ開始点）
 
 ### 最優先
-👉 **GGAI 用の最小仮想コントローラー接続設計 / 実装**
+👉 **GGAI 用の仮想入力層を AI に接続する**
 
 ### 方針
 amaAI の公開ソースから接続コードを拾う前提は一旦やめ、  
-**GGAI 用に最小の接続層を自作する** 方針で進める。
+**GGAI 用に自作した最小接続層をそのまま育てる** 方針で進める。
 
 ### 最初の目標
-1. 仮想コントローラー初期化の入口を作る  
-2. 固定入力だけ送れるか確認する  
-   - `WAIT`
-   - `RIGHT`
-   - `PLACE_BOMB`
-3. `SBR2Action` を入力へ変換する層を作る  
-4. そのあと AI Brain とつなぐ  
+1. `SBR2Action` を仮想入力へ変換する最小層を作る  
+   - `WAIT` → `neutral`
+   - `RIGHT` 系移動 → `RIGHT`
+   - `PLACE_BOMB` 系 → `A button`
+2. 最初は **固定入力ではなく、最小の action 変換** を通して入力送信する
+3. そのあと AI Brain とつなぐ
+4. 最後にゲーム上で最小確認する
 
 ### 仮想コントローラー接続で参照するもの
 - `original_amaAI/`
 - `reference_runtime/ama_v1_8_2/`
 - `reference_runtime/scp_driver/`
+- `core/sbr2_virtual_pad.h`
+- `core/sbr2_virtual_pad.cpp`
+- `test/sbr2_virtual_pad_test.cpp`
 
 ### ただし現時点の判断
 - 公開されている `original_amaAI` からは、接続コードが見つからない可能性が高い
-- なので **参考資料としては参照するが、接続層そのものは自作前提** で進める
+- なので **参考資料としては参照するが、接続層そのものは自作済みのものを使って進める**
 
 ---
 
@@ -357,7 +434,7 @@ amaAI の公開ソースから接続コードを拾う前提は一旦やめ、
 - 必ずテストで確認
 - コピペ形式で指示
 - エラーは最優先修正
-- 仮想コントローラー接続は、まず**最小の固定入力確認**から始める
+- 仮想コントローラー接続は、まず **最小の action 変換確認** から始める
 
 ---
 
@@ -377,7 +454,10 @@ https://github.com/guyat/ggai-bomberman-ai
 - `core/sbr2_ai_brain.cpp`
 - `core/sbr2_ai_brain.h`
 - `core/sbr2_board.h`
+- `core/sbr2_virtual_pad.h`
+- `core/sbr2_virtual_pad.cpp`
 - `test/sbr2_ai_brain_test.cpp`
+- `test/sbr2_virtual_pad_test.cpp`
 
 参考資料:
 - `original_amaAI/`
@@ -387,7 +467,7 @@ https://github.com/guyat/ggai-bomberman-ai
 重要:
 - いきなりコードを書かない
 - まず現状整理
-- 次にやることは **GGAI 用の最小仮想コントローラー接続設計**
+- 次にやることは **GGAI 用の仮想入力層を AI に接続すること**
 - 小さい変更のみ
 - コピペ形式で指示
 - エラーは最優先修正
@@ -399,7 +479,8 @@ https://github.com/guyat/ggai-bomberman-ai
 👉 AIコアはかなり進んだ  
 👉 防御拡張もかなり進んだ  
 👉 amaAI 公開ソースから接続コードをそのまま拾うのは難しそう  
-👉 次の最大の山は **仮想コントローラー接続と実動作確認**  
-👉 まずは **GGAI 用の最小接続層** を作る
+👉 仮想コントローラー接続と最小入力確認は **C# / C++ とも成功済み**  
+👉 次の最大の山は **AI と仮想入力層の接続**  
+👉 まずは **SBR2Action → 仮想入力** の最小変換から進める
 
 # ============================================

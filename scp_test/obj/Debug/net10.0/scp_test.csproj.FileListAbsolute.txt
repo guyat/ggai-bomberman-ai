@@ -1,0 +1,15 @@
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\bin\Debug\net10.0\scp_test.exe
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\bin\Debug\net10.0\scp_test.deps.json
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\bin\Debug\net10.0\scp_test.runtimeconfig.json
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\bin\Debug\net10.0\scp_test.dll
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\bin\Debug\net10.0\scp_test.pdb
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\scp_test.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\scp_test.AssemblyInfoInputs.cache
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\scp_test.AssemblyInfo.cs
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\scp_test.csproj.CoreCompileInputs.cache
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\scp_test.sourcelink.json
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\scp_test.dll
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\refint\scp_test.dll
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\scp_test.pdb
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\scp_test.genruntimeconfig.cache
+C:\Users\PC_User\Documents\GGAI\ggai\scp_test\obj\Debug\net10.0\ref\scp_test.dll
