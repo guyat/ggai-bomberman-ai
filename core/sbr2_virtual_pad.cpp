@@ -8,7 +8,9 @@
 #include <vector>
 
 #ifdef _WIN32
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 #include <setupapi.h>
 #include <objbase.h>
@@ -28,6 +30,15 @@ namespace
 
     constexpr unsigned short kButtonNone = 0;
     constexpr unsigned short kButtonRight = 1u << 3;
+    constexpr unsigned short kButtonLeft = 1u << 2;
+    constexpr unsigned short kButtonUp = 1u << 0;
+    constexpr unsigned short kButtonDown = 1u << 1;
+
+    constexpr unsigned short kButtonUpLeft = kButtonUp | kButtonLeft;
+    constexpr unsigned short kButtonUpRight = kButtonUp | kButtonRight;
+    constexpr unsigned short kButtonDownLeft = kButtonDown | kButtonLeft;
+    constexpr unsigned short kButtonDownRight = kButtonDown | kButtonRight;
+
     constexpr unsigned short kButtonA = 1u << 12;
 
     std::string get_last_error_message(const char *prefix)
@@ -393,6 +404,41 @@ bool SBR2VirtualPad::send_neutral()
 bool SBR2VirtualPad::send_right()
 {
     return send_buttons(kButtonRight);
+}
+
+bool SBR2VirtualPad::send_left()
+{
+    return send_buttons(kButtonLeft);
+}
+
+bool SBR2VirtualPad::send_up()
+{
+    return send_buttons(kButtonUp);
+}
+
+bool SBR2VirtualPad::send_down()
+{
+    return send_buttons(kButtonDown);
+}
+
+bool SBR2VirtualPad::send_up_left()
+{
+    return send_buttons(kButtonUpLeft);
+}
+
+bool SBR2VirtualPad::send_up_right()
+{
+    return send_buttons(kButtonUpRight);
+}
+
+bool SBR2VirtualPad::send_down_left()
+{
+    return send_buttons(kButtonDownLeft);
+}
+
+bool SBR2VirtualPad::send_down_right()
+{
+    return send_buttons(kButtonDownRight);
 }
 
 bool SBR2VirtualPad::send_bomb()

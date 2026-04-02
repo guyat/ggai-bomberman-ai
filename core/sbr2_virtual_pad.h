@@ -17,6 +17,17 @@ public:
     bool send_neutral();
     bool send_right();
     bool send_bomb();
+    //3行追記分
+    bool send_left();
+    bool send_up();
+    bool send_down();
+
+    //斜め入力分
+    bool send_up_left();
+    bool send_up_right();
+    bool send_down_left();
+    bool send_down_right();
+
     bool release_all();
 
     bool is_stub_mode() const;
