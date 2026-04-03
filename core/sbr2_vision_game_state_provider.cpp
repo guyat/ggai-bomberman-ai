@@ -91,6 +91,111 @@ namespace
         return detect_enemy_position_from_frame(tick);
     }
 
+    int count_opening_player_like_pixels(const SBR2Image &image,
+                                         const SBR2RectI &rect)
+    {
+        if (image.width <= 0 || image.height <= 0)
+        {
+            return 0;
+        }
+
+        int count = 0;
+
+        for (int y = rect.y0; y < rect.y1; ++y)
+        {
+            for (int x = rect.x0; x < rect.x1; ++x)
+            {
+                const std::size_t index =
+                    (static_cast<std::size_t>(y) * static_cast<std::size_t>(image.width) +
+                     static_cast<std::size_t>(x)) *
+                    4;
+
+                const std::uint8_t b = image.pixels[index + 0];
+                const std::uint8_t g = image.pixels[index + 1];
+                const std::uint8_t r = image.pixels[index + 2];
+
+                const int max_rg = (r > g) ? r : g;
+                const int maxc = (max_rg > b) ? max_rg : b;
+
+                const int min_rg = (r < g) ? r : g;
+                const int minc = (min_rg < b) ? min_rg : b;
+
+                const int sat = maxc - minc;
+                const int lum = (static_cast<int>(r) + static_cast<int>(g) + static_cast<int>(b)) / 3;
+
+                const bool too_white = (lum >= 225 && sat <= 18);
+                const bool too_dark = (lum <= 16);
+                const bool green_floor_like = (g >= 70 && g >= r + 12 && g >= b + 12);
+                const bool blue_floor_like = (b >= 70 && b >= r + 12 && b >= g + 8);
+                const bool warm_ui_like = (r >= 190 && g >= 135 && b <= 120);
+
+                const bool player_like =
+                    !too_white &&
+                    !too_dark &&
+                    !green_floor_like &&
+                    !blue_floor_like &&
+                    !warm_ui_like &&
+                    (sat >= 28 || lum <= 95);
+
+                if (player_like)
+                {
+                    ++count;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    std::pair<int, int> detect_opening_corner_by_rank(const SBR2Image &image, int rank)
+    {
+        struct CornerCandidate
+        {
+            int board_x;
+            int board_y;
+            SBR2RectI rect;
+            int score;
+        };
+
+        CornerCandidate corners[4] = {
+            {0, 0, make_rect_from_ratio(image, 0.02, 0.06, 0.18, 0.26), 0},
+            {12, 0, make_rect_from_ratio(image, 0.82, 0.06, 0.98, 0.26), 0},
+            {0, 10, make_rect_from_ratio(image, 0.02, 0.74, 0.18, 0.94), 0},
+            {12, 10, make_rect_from_ratio(image, 0.82, 0.74, 0.98, 0.94), 0},
+        };
+
+        for (int i = 0; i < 4; ++i)
+        {
+            corners[i].score = count_opening_player_like_pixels(image, corners[i].rect);
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            for (int j = i + 1; j < 4; ++j)
+            {
+                if (corners[j].score > corners[i].score)
+                {
+                    const CornerCandidate tmp = corners[i];
+                    corners[i] = corners[j];
+                    corners[j] = tmp;
+                }
+            }
+        }
+
+        if (rank < 0 || rank >= 4)
+        {
+            return {-1, -1};
+        }
+
+        const int kMinCornerScore = 120;
+        if (corners[rank].score < kMinCornerScore)
+        {
+            return {-1, -1};
+        }
+
+        return {corners[rank].board_x, corners[rank].board_y};
+    }
+
     struct SpawnCornerProbe
     {
         int board_x = -1;
@@ -908,8 +1013,19 @@ SBR2GameState SBR2VisionGameStateProvider::get_state(int tick)
             << std::endl;
     }
 
-    auto self_pos = detect_self_position(tick);
-    auto enemy_pos = detect_enemy_position(tick);
+    std::pair<int, int> self_pos = {-1, -1};
+    std::pair<int, int> enemy_pos = {-1, -1};
+
+    if (ready_active || go_active)
+    {
+        self_pos = detect_opening_corner_by_rank(image, 0);
+        enemy_pos = detect_opening_corner_by_rank(image, 1);
+    }
+    else
+    {
+        self_pos = detect_self_position(tick);
+        enemy_pos = detect_enemy_position(tick);
+    }
 
     s.self_found = (self_pos.first >= 0 && self_pos.second >= 0);
     s.self_x = self_pos.first;
@@ -927,15 +1043,7 @@ SBR2GameState SBR2VisionGameStateProvider::get_state(int tick)
     }
     else if (ready_active)
     {
-        // 本物の READY は優先して通す。
-        // ラウンド遷移帯が少し重なっても、READY を見たら ai_pad_test 側の
-        // controls_unlocked_for_round を解除できるようにする。
         phase = SBR2Phase::READY;
-    }
-    else if (result_band_active)
-    {
-        // READY が見えていない帯演出だけ UNKNOWN にする。
-        phase = SBR2Phase::UNKNOWN;
     }
     else if (go_active)
     {
