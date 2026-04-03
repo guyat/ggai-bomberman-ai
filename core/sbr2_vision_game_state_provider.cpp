@@ -91,6 +91,142 @@ namespace
         return detect_enemy_position_from_frame(tick);
     }
 
+    struct SpawnCornerProbe
+    {
+        int board_x = -1;
+        int board_y = -1;
+        double x0_ratio = 0.0;
+        double y0_ratio = 0.0;
+        double x1_ratio = 0.0;
+        double y1_ratio = 0.0;
+    };
+
+    int count_opening_player_like_pixels(const SBR2Image &image,
+                                         double x0_ratio,
+                                         double y0_ratio,
+                                         double x1_ratio,
+                                         double y1_ratio)
+    {
+        if (image.width <= 0 || image.height <= 0)
+        {
+            return 0;
+        }
+
+        int x0 = std::clamp(static_cast<int>(image.width * x0_ratio), 0, image.width);
+        int y0 = std::clamp(static_cast<int>(image.height * y0_ratio), 0, image.height);
+        int x1 = std::clamp(static_cast<int>(image.width * x1_ratio), 0, image.width);
+        int y1 = std::clamp(static_cast<int>(image.height * y1_ratio), 0, image.height);
+
+        if (x0 >= x1 || y0 >= y1)
+        {
+            return 0;
+        }
+
+        int count = 0;
+
+        for (int y = y0; y < y1; ++y)
+        {
+            for (int x = x0; x < x1; ++x)
+            {
+                const std::size_t index =
+                    (static_cast<std::size_t>(y) * static_cast<std::size_t>(image.width) +
+                     static_cast<std::size_t>(x)) *
+                    4;
+
+                const std::uint8_t b = image.pixels[index + 0];
+                const std::uint8_t g = image.pixels[index + 1];
+                const std::uint8_t r = image.pixels[index + 2];
+
+                const int max_rg = (r > g) ? r : g;
+                const int maxc = (max_rg > b) ? max_rg : b;
+
+                const int min_rg = (r < g) ? r : g;
+                const int minc = (min_rg < b) ? min_rg : b;
+
+                const int sat = maxc - minc;
+                const int lum = (static_cast<int>(r) + static_cast<int>(g) + static_cast<int>(b)) / 3;
+
+                const bool too_white = (lum >= 225 && sat <= 18);
+                const bool too_dark = (lum <= 16);
+                const bool green_floor_like = (g >= 70 && g >= r + 12 && g >= b + 12);
+                const bool blue_floor_like = (b >= 70 && b >= r + 12 && b >= g + 8);
+                const bool warm_ui_like = (r >= 190 && g >= 135 && b <= 120);
+
+                const bool player_like =
+                    !too_white &&
+                    !too_dark &&
+                    !green_floor_like &&
+                    !blue_floor_like &&
+                    !warm_ui_like &&
+                    (sat >= 28 || lum <= 95);
+
+                if (player_like)
+                {
+                    ++count;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    std::pair<int, int> detect_opening_corner_by_rank_from_image(const SBR2Image &image, int rank)
+    {
+        static const SpawnCornerProbe probes[4] = {
+            {0, 0, 0.02, 0.06, 0.18, 0.26},
+            {12, 0, 0.82, 0.06, 0.98, 0.26},
+            {0, 10, 0.02, 0.74, 0.18, 0.94},
+            {12, 10, 0.82, 0.74, 0.98, 0.94},
+        };
+
+        struct ScoredCorner
+        {
+            int board_x = -1;
+            int board_y = -1;
+            int score = 0;
+        };
+
+        ScoredCorner scored[4];
+
+        for (int i = 0; i < 4; ++i)
+        {
+            scored[i].board_x = probes[i].board_x;
+            scored[i].board_y = probes[i].board_y;
+            scored[i].score = count_opening_player_like_pixels(
+                image,
+                probes[i].x0_ratio,
+                probes[i].y0_ratio,
+                probes[i].x1_ratio,
+                probes[i].y1_ratio);
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            for (int j = i + 1; j < 4; ++j)
+            {
+                if (scored[j].score > scored[i].score)
+                {
+                    const ScoredCorner tmp = scored[i];
+                    scored[i] = scored[j];
+                    scored[j] = tmp;
+                }
+            }
+        }
+
+        if (rank < 0 || rank >= 4)
+        {
+            return {-1, -1};
+        }
+
+        const int kMinCornerScore = 120;
+        if (scored[rank].score < kMinCornerScore)
+        {
+            return {-1, -1};
+        }
+
+        return {scored[rank].board_x, scored[rank].board_y};
+    }
+
     struct SBR2RectI
     {
         int x0 = 0;
@@ -760,6 +896,18 @@ SBR2GameState SBR2VisionGameStateProvider::get_state(int tick)
             << std::endl;
     }
 
+    if ((ready_active || go_active) && !result_band_active && tick % 30 == 0)
+    {
+        const auto corner0 = detect_opening_corner_by_rank_from_image(image, 0);
+        const auto corner1 = detect_opening_corner_by_rank_from_image(image, 1);
+
+        std::cout
+            << "[vision][opening_corners]"
+            << " c0=(" << corner0.first << "," << corner0.second << ")"
+            << " c1=(" << corner1.first << "," << corner1.second << ")"
+            << std::endl;
+    }
+
     auto self_pos = detect_self_position(tick);
     auto enemy_pos = detect_enemy_position(tick);
 
@@ -777,13 +925,21 @@ SBR2GameState SBR2VisionGameStateProvider::get_state(int tick)
     {
         phase = SBR2Phase::RESULT;
     }
+    else if (ready_active)
+    {
+        // 本物の READY は優先して通す。
+        // ラウンド遷移帯が少し重なっても、READY を見たら ai_pad_test 側の
+        // controls_unlocked_for_round を解除できるようにする。
+        phase = SBR2Phase::READY;
+    }
+    else if (result_band_active)
+    {
+        // READY が見えていない帯演出だけ UNKNOWN にする。
+        phase = SBR2Phase::UNKNOWN;
+    }
     else if (go_active)
     {
         phase = SBR2Phase::GO;
-    }
-    else if (ready_active)
-    {
-        phase = SBR2Phase::READY;
     }
 
     s.phase = phase;

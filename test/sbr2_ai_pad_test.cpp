@@ -285,6 +285,8 @@ int main()
         SBR2Phase last_phase = SBR2Phase::UNKNOWN;
         bool bomb_placed_in_current_go = false;
         bool result_seen_once = false;
+        bool controls_unlocked_for_round = false;
+        int ready_seen_streak_for_unlock = 0;
 
         // 今は false のまま Dummy を使う。
         // Vision 実験を始めるときに true に切り替える。
@@ -327,78 +329,105 @@ int main()
                 if (state.phase == SBR2Phase::RESULT)
                 {
                     result_seen_once = true;
-                }
-
-                if (!result_seen_once && state.phase != SBR2Phase::RESULT)
-                {
+                    controls_unlocked_for_round = false;
+                    ready_seen_streak_for_unlock = 0;
                     bomb_placed_in_current_go = false;
                     ready_buttons = 0;
                     current_action = SBR2Action::WAIT;
                 }
-                else if (state.phase == SBR2Phase::READY)
+                else if (!result_seen_once)
                 {
-                    bomb_placed_in_current_go = false;
-                    ready_buttons = decide_ready_opening_buttons(state);
-                    current_action = decide_ready_action(state);
-                }
-                else if (state.phase == SBR2Phase::GO)
-                {
-                    ready_buttons = 0;
-
-                    int go_tick = (tick % kRoundFrames) - kGoStartFrame;
-
-                    if (!bomb_placed_in_current_go &&
-                        state.phase == SBR2Phase::GO &&
-                        !state.go_open_delay_active)
-                    {
-                        current_action = decide_bomb_demo_action();
-                        bomb_placed_in_current_go = true;
-                    }
-                    else
-                    {
-                        current_action = decide_go_action(go_tick);
-                    }
-                }
-                else if (state.phase == SBR2Phase::RESULT)
-                {
+                    controls_unlocked_for_round = false;
+                    ready_seen_streak_for_unlock = 0;
                     bomb_placed_in_current_go = false;
                     ready_buttons = 0;
-                    current_action = decide_result_action();
+                    current_action = SBR2Action::WAIT;
                 }
                 else
                 {
-                    ready_buttons = 0;
-                    current_action = SBR2Action::WAIT;
-                }
+                    if (!controls_unlocked_for_round)
+                    {
+                        if (state.phase == SBR2Phase::READY)
+                        {
+                            ++ready_seen_streak_for_unlock;
+                        }
+                        else
+                        {
+                            ready_seen_streak_for_unlock = 0;
+                        }
 
-                if (current_action != last_printed_action)
-                {
-                    std::cout << "[tick " << tick << "] action = "
-                              << action_to_string(current_action) << std::endl;
-                    last_printed_action = current_action;
-                }
+                        if (ready_seen_streak_for_unlock >= 2)
+                        {
+                            controls_unlocked_for_round = true;
+                        }
+                    }
 
-                if (tick % 30 == 0)
-                {
-                    std::cout << "[phase] " << phase_to_string(state.phase)
-                              << " self=(" << state.self_x << "," << state.self_y << ")"
-                              << " enemy=(" << state.enemy_x << "," << state.enemy_y << ")"
-                              << " ready_buttons=" << ready_buttons
-                              << " go_open_delay=" << (state.go_open_delay_active ? 1 : 0)
-                              << " result_seen=" << (result_seen_once ? 1 : 0)
-                              << std::endl;
+                    if (!controls_unlocked_for_round)
+                    {
+                        bomb_placed_in_current_go = false;
+                        ready_buttons = 0;
+                        current_action = SBR2Action::WAIT;
+                    }
+                    else if (state.phase == SBR2Phase::READY)
+                    {
+                        // いったん READY 中央寄せも止める。
+                        // まだ self 座標が dummy のままで信用できないため、
+                        // 開幕寄せ入力を出すと実際の開始位置と逆方向へ入ることがある。
+                        bomb_placed_in_current_go = false;
+                        ready_buttons = 0;
+                        current_action = SBR2Action::WAIT;
+                    }
+                    else if (state.phase == SBR2Phase::GO)
+                    {
+                        // いったん GO 中のデモ行動を全部止める。
+                        // まだ self / enemy / board を AI Brain に本接続していないため、
+                        // 実ゲームで動かすと固定デモ挙動（PLACE_BOMB / UP）が暴れやすい。
+                        ready_buttons = 0;
+                        bomb_placed_in_current_go = false;
+                        current_action = SBR2Action::WAIT;
+                    }
+                    else if (state.phase == SBR2Phase::RESULT)
+                    {
+                        bomb_placed_in_current_go = false;
+                        ready_buttons = 0;
+                        current_action = decide_result_action();
+                    }
+                    else
+                    {
+                        ready_buttons = 0;
+                        current_action = SBR2Action::WAIT;
+                    }
                 }
 
                 last_phase = state.phase;
             }
 
-            if (state.phase == SBR2Phase::READY)
+            if (!controls_unlocked_for_round)
+            {
+                sender.send_action(SBR2Action::WAIT);
+            }
+            else if (state.phase == SBR2Phase::READY)
             {
                 sender.send_buttons(ready_buttons);
             }
             else
             {
                 sender.send_action(current_action);
+            }
+
+            if (tick % 30 == 0)
+            {
+                std::cout
+                    << "[phase] " << phase_to_string(state.phase)
+                    << " self=(" << state.self_x << "," << state.self_y << ")"
+                    << " enemy=(" << state.enemy_x << "," << state.enemy_y << ")"
+                    << " ready_buttons=" << ready_buttons
+                    << " go_open_delay=" << (state.go_open_delay_active ? 1 : 0)
+                    << " result_seen=" << (result_seen_once ? 1 : 0)
+                    << " controls_unlocked=" << (controls_unlocked_for_round ? 1 : 0)
+                    << " ready_unlock_streak=" << ready_seen_streak_for_unlock
+                    << " action=" << action_to_string(current_action)
+                    << std::endl;
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
