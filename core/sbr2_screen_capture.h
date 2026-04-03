@@ -1,7 +1,8 @@
 #pragma once
 
-#include <vector>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 struct SBR2Image
 {
@@ -11,3 +12,4 @@ struct SBR2Image
 };
 
 bool capture_screen(SBR2Image &out_image);
+bool save_image_as_bmp(const SBR2Image &image, const std::string &path);

@@ -29,4 +29,5 @@ struct SBR2GameState
     int enemy_y = -1;
 
     SBR2Phase phase = SBR2Phase::UNKNOWN;
+    bool go_open_delay_active = false;
 };

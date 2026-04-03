@@ -15,6 +15,13 @@
 #include "core/sbr2_game_state_provider.h"
 #include "core/sbr2_vision_game_state_provider.h"
 
+#include "core/sbr2_screen_capture.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#include <cstdio>
+#endif
+
 namespace
 {
     SBR2Action decide_escape_demo_action();
@@ -266,16 +273,18 @@ int main()
     std::thread worker([&]()
                        {
         int tick = 0;
-        //int escape_frames = 0;
-
         SBR2Action current_action = SBR2Action::WAIT;
         SBR2Action last_printed_action = SBR2Action::WAIT;
         std::uint16_t ready_buttons = 0;
+        bool saved_debug_capture = false;
+        bool last_f8_down = false;
+        int debug_capture_index = 0;
 
         const int THINK_INTERVAL = 6;
 
         SBR2Phase last_phase = SBR2Phase::UNKNOWN;
         bool bomb_placed_in_current_go = false;
+        bool result_seen_once = false;
 
         // 今は false のまま Dummy を使う。
         // Vision 実験を始めるときに true に切り替える。
@@ -292,10 +301,41 @@ int main()
         while (running.load()) {
             SBR2GameState state = provider->get_state(tick);
 
+#ifdef _WIN32
+            bool f8_down = (GetAsyncKeyState(VK_F8) & 0x8000) != 0;
+            if (f8_down && !last_f8_down)
+            {
+                SBR2Image debug_image;
+                if (capture_screen(debug_image))
+                {
+                    ++debug_capture_index;
+
+                    char path[64];
+                    std::snprintf(path, sizeof(path),
+                                  "debug_capture_%03d.bmp",
+                                  debug_capture_index);
+
+                    save_image_as_bmp(debug_image, path);
+                }
+            }
+            last_f8_down = f8_down;
+#endif
+
             if (tick % THINK_INTERVAL == 0 || state.phase != last_phase || current_action == SBR2Action::PLACE_BOMB)
             {
                 // ===== phaseベース制御 =====
-                if (state.phase == SBR2Phase::READY)
+                if (state.phase == SBR2Phase::RESULT)
+                {
+                    result_seen_once = true;
+                }
+
+                if (!result_seen_once && state.phase != SBR2Phase::RESULT)
+                {
+                    bomb_placed_in_current_go = false;
+                    ready_buttons = 0;
+                    current_action = SBR2Action::WAIT;
+                }
+                else if (state.phase == SBR2Phase::READY)
                 {
                     bomb_placed_in_current_go = false;
                     ready_buttons = decide_ready_opening_buttons(state);
@@ -307,7 +347,9 @@ int main()
 
                     int go_tick = (tick % kRoundFrames) - kGoStartFrame;
 
-                    if (!bomb_placed_in_current_go && go_tick >= kBombDecisionFrame)
+                    if (!bomb_placed_in_current_go &&
+                        state.phase == SBR2Phase::GO &&
+                        !state.go_open_delay_active)
                     {
                         current_action = decide_bomb_demo_action();
                         bomb_placed_in_current_go = true;
@@ -342,6 +384,8 @@ int main()
                               << " self=(" << state.self_x << "," << state.self_y << ")"
                               << " enemy=(" << state.enemy_x << "," << state.enemy_y << ")"
                               << " ready_buttons=" << ready_buttons
+                              << " go_open_delay=" << (state.go_open_delay_active ? 1 : 0)
+                              << " result_seen=" << (result_seen_once ? 1 : 0)
                               << std::endl;
                 }
 

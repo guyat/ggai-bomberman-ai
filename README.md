@@ -555,3 +555,285 @@ https://github.com/guyat/ggai-bomberman-ai
 | Vision認識 | 未実装 |
 
 👉 次フェーズ：Vision実装
+
+# ============================================
+# 追加更新（2026/04/03-04 Phase認識仕上げ + A前提固定フェーズ）
+# ============================================
+
+## ■ このスレで固定したテスト前提（最重要）
+
+このスレ以降、Vision の phase テストは **A前提** に固定する。
+
+### A前提の流れ
+1. DRAW直前でポーズ開始  
+2. 仮想コン接続  
+3. ゲーム画面でポーズ解除  
+4. すぐに DRAW になる  
+5. オレンジと黄色の帯によるラウンド遷移演出が入る  
+6. 次ラウンド開始で READY が出る  
+7. READY が消えて GO が出る  
+8. しばらく待って決着し、DRAW か WINNER が出る  
+
+👉 今後この README を読んで次スレへ移行する場合も、  
+Vision の phase ログは **A前提** として読むこと。
+
+---
+
+## ■ 今スレでやったこと（追記）
+
+### ⑪ Vision provider まわりの主要ファイル整理
+今回の phase 認識で重要だったファイルは以下。
+
+- `core/sbr2_game_state.h`
+- `core/sbr2_game_state_provider.h`
+- `core/sbr2_vision_game_state_provider.h`
+- `core/sbr2_vision_game_state_provider.cpp`
+- `core/sbr2_screen_capture.h`
+- `core/sbr2_screen_capture.cpp`
+- `test/sbr2_ai_pad_test.cpp`
+
+---
+
+### ⑫ 画面キャプチャをゲームウィンドウ基準に整理
+- `sbr2_screen_capture.cpp` で SBR2 ウィンドウ矩形を基準に BitBlt 取得する方式を採用
+- `mode=sbr2_window_blt` ログ確認済み
+- `PrintWindow` は白画面化したため不採用
+- 現在は **ゲームウィンドウ矩形をデスクトップから切り出す方式**
+
+#### 現時点の注意
+- 前面に別ウィンドウが重なると混ざる可能性あり
+- ただし READY / GO / DRAW / WINNER の認識には実用域
+
+---
+
+### ⑬ READY / GO / RESULT 系 probe を追加
+`core/sbr2_vision_game_state_provider.cpp` にて、画像中の矩形から色条件付き画素数を数える probe を追加した。
+
+#### READY probe
+- `ready_probe`
+- 中央付近の READY 表示を白 / 暖色系で観測
+- `ready_visible_streak`
+- `ready_hidden_streak`
+- `ready_active`
+
+#### GO probe
+- `go_probe`
+- 中央付近の GO 表示を主に緑 / 白系で観測
+- `go_visible_streak`
+- `go_hidden_streak`
+- `go_active`
+
+#### RESULT 系 probe
+- `winner_probe`
+  - 現在は実質的に **WINNER専用ではなく RESULT 表示寄りの probe**
+- `draw_probe`
+  - DRAW 用の白 / 銀系 probe
+- `result_visible_streak`
+- `result_hidden_streak`
+- `result_active`
+- `result_gate`
+  - READY/GO active 中は RESULT 判定しない
+- `result_band`
+  - オレンジ / 黄色の帯演出を検出し、そのフレームの RESULT probe を無効化
+- `winner_right_noise`
+  - 右側だけ極端に高いノイズを除外するガード
+
+---
+
+### ⑭ phase 判定をフレーム数ベースの active 制御へ変更
+単なる visible 判定ではなく、  
+**何フレーム連続で見えたか / 何フレーム連続で見えなくなったか**
+で ON/OFF する方式へ変更した。
+
+#### 現在の active 条件
+- READY
+  - 3フレーム見えたら ON
+  - 2フレーム見えなくなったら OFF
+- GO
+  - 2フレーム見えたら ON
+  - 2フレーム見えなくなったら OFF
+- RESULT
+  - 4フレーム見えたら ON
+  - 1フレーム見えなくなったら OFF
+
+#### 現在の phase 優先順
+1. `result_active` → `RESULT`
+2. `go_active` → `GO`
+3. `ready_active` → `READY`
+4. それ以外 → `detect_phase(tick)` fallback
+
+#### fallback の現在値
+- `detect_phase(tick)` は **常に GO を返す**
+- ダミー READY / ダミー RESULT は削除済み
+- つまり実質的な phase 本体は **Vision の active 判定**
+
+---
+
+### ⑮ READY / GO / WINNER / DRAW 認識の到達点
+A前提ログに基づく現時点の評価。
+
+#### READY
+- **かなり認識できている**
+- 帯演出後に `ready_active=1` で READY に戻るログ確認済み
+
+#### GO
+- **かなり認識できている**
+- `go_active=1` で GO に移るログ確認済み
+
+#### DRAW
+- **認識できている**
+- 接続直後の DRAW 区間で `draw_probe confirmed=1`、`phase=RESULT` 確認済み
+
+#### WINNER
+- **認識できている寄り**
+- 後半の結果表示で `winner_probe/draw_probe` が強く立ち、`phase=RESULT` 確認済み
+
+#### 結論
+👉 **READY / GO / WINNER / DRAW は、現時点でかなり実用ライン**
+
+ただし完全無欠ではなく、以下の残課題あり。
+
+---
+
+### ⑯ RESULT 検出の残課題
+#### まだ残る問題
+- 右側ノイズで `winner_total` / `winner_right_count` がやや高く出る区間がある
+- ただし現在は `winner_visible=0` に落ち、`result_gate raw=0 active=0` で phase を壊さないところまで改善済み
+- RESULT probe の生値はまだ完璧ではないが、**phase としてはかなり安定化した**
+
+#### 今スレで入れた対策
+- `result_band_active`
+  - オレンジ / 黄色の帯演出を検出したら `winner_visible=false` / `draw_visible=false`
+- `winner_right_noise`
+  - 右側だけ異常に高いとき `winner_visible=false`
+
+---
+
+### ⑰ A前提の最初の先走り対策
+`test/sbr2_ai_pad_test.cpp` にて、  
+**最初の RESULT を一度見るまでは通常AIを動かさない** 制御を追加。
+
+#### 追加変数
+- `result_seen_once`
+
+#### 現在の挙動
+- 接続直後の曖昧区間では WAIT 寄りに抑える
+- 一度 DRAW/RESULT を見たあとから次ラウンド READY / GO を通常処理
+
+※ ただし最初の 1 回だけ完全には still に抑え切れていないログもあったため、ここは将来的に Connect/Disconnect UI や「READY を見てから操作開始」でさらに改善余地あり。
+
+---
+
+### ⑱ GO 開幕ボムの短い遅延制御を追加
+`core/sbr2_game_state.h` と `core/sbr2_vision_game_state_provider.cpp`、`test/sbr2_ai_pad_test.cpp` にて、  
+GO 開幕で即ボムを置くタイミングを制御するためのフラグを追加した。
+
+#### 追加済み
+- `go_open_delay_active`
+
+#### 意味
+- GO を見たあと、短い遅延を設ける
+- 遅延が切れた瞬間から開幕ボムを置ける
+- phase の安定と開幕ボムの強さを分離して調整する土台
+
+#### 重要
+これは **常時の爆弾配置許可** ではなく、  
+**GO 開幕の短い特別処理** として扱う。
+
+---
+
+### ⑲ 現時点での到達点（このスレ終了時点）
+
+| 項目 | 状態 |
+|---|---|
+| 画面キャプチャ | 実用域 |
+| READY 認識 | かなり良い |
+| GO 認識 | かなり良い |
+| DRAW 認識 | かなり良い |
+| WINNER 認識 | かなり良い |
+| RESULT 帯演出除外 | 実装済み |
+| RESULT 右側ノイズ抑制 | 実装済み（微調整余地あり） |
+| GO 開幕遅延フラグ | 実装済み |
+| A前提最初の先走り抑制 | 実装済み（なお改善余地あり） |
+
+👉 **phase 認識フェーズはかなり仕上がった。次フェーズへ進める土台はできている。**
+
+---
+
+## ■ 次スレで最優先にやること（更新）
+
+### 1. 接続管理の整理
+- 仮想コン接続してから **認識だけ開始**
+- ゲーム画面で **READY を見てから操作開始** に整理したい
+- amaAI のような `Connect` / `Disconnect` UI も将来的にほしい
+
+### 2. 次の主フェーズ
+次スレでは以下へ進む。
+
+- 自機座標（AI側なので `self`）取得
+- 敵座標（プレイヤー側なので `enemy`）取得
+- 開幕位置関係からの行動判断
+- ダミー座標削除
+- AI Brain への本接続整理
+
+### 3. 次スレ開始時の重要前提
+- このスレの Vision phase テストは **A前提固定**
+- 次スレでも、過去のログを読むときはその前提で読むこと
+- ただし実装主題は phase 認識から **座標取得フェーズ** へ移す
+
+---
+
+## ■ 次スレ開始テンプレ（更新版）
+
+このプロジェクトの続きです。  
+README.md とコードを読んで現状整理してください。
+
+GitHub:  
+https://github.com/guyat/ggai-bomberman-ai
+
+作業ディレクトリ:  
+`/c/Users/PC_User/Documents/GGAI/ggai`
+
+まず読むファイル:
+- `README.md`
+- `core/sbr2_game_state.h`
+- `core/sbr2_game_state_provider.h`
+- `core/sbr2_vision_game_state_provider.h`
+- `core/sbr2_vision_game_state_provider.cpp`
+- `core/sbr2_screen_capture.h`
+- `core/sbr2_screen_capture.cpp`
+- `test/sbr2_ai_pad_test.cpp`
+- `core/sbr2_ai_brain.cpp`
+- `core/sbr2_ai_brain.h`
+- `test/sbr2_ai_brain_test.cpp`
+
+重要:
+- phase テストは **A前提固定**
+  - DRAW直前ポーズ開始
+  - 仮想コン接続
+  - ポーズ解除
+  - DRAW
+  - 帯演出
+  - READY
+  - GO
+  - 決着して DRAW/WINNER
+- いきなりコードを書かない
+- まず現状整理
+- 次にやることは **self / enemy 座標取得フェーズへ進むこと**
+- 小さい変更のみ
+- コピペ形式で指示
+- エラーは最優先修正
+
+---
+
+## ■ 現在の最重要ポイント（更新版まとめ）
+
+👉 AIコアはかなり進んだ  
+👉 仮想入力も実ゲーム操作も成立済み  
+👉 Vision 画面取得も成立済み  
+👉 READY / GO / WINNER / DRAW の認識はかなり実用ライン  
+👉 A前提のテスト運用を固定した  
+👉 次の最大の山は **self / enemy 座標取得と AI Brain 本接続**  
+👉 その前段として、将来的には **Connect / Disconnect UI と「READY を見てから操作開始」** を入れるとさらに運用が楽になる
+
+# ============================================
